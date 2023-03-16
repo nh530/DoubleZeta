@@ -51,13 +51,6 @@ void ThreadPool::ThreadLoop() {
     outputs.push(Result{job()}); // Execute job and add output to output queue.
   }
 }
-void f1(int n) {
-  for (int i = 0; i < 5; ++i) {
-    std::cout << "Thread 1 executing\n";
-    ++n;
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-  }
-}
 
 void ThreadPool::Start(int num_threads = -1) {
   if (num_threads == -1)                               // assign default number of threads of none is passed as argument.
