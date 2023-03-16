@@ -9,7 +9,7 @@ concept Numeric = std::is_floating_point_v<Typ> || std::numeric_limits<Typ>::is_
 
 struct Result {
   std::variant<int, float> value;
-  const char *val_type{typeid(int).name()}; // type of value object. i.e. 'int' or 'float'.
+  const char *val_type{typeid(value).name()}; // type of value object. i.e. 'i' or 'f'.
 };
 
 class ThreadPool {
@@ -51,16 +51,24 @@ void ThreadPool::ThreadLoop() {
     outputs.push(Result{job()}); // Execute job and add output to output queue.
   }
 }
+void f1(int n) {
+  for (int i = 0; i < 5; ++i) {
+    std::cout << "Thread 1 executing\n";
+    ++n;
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+}
 
 void ThreadPool::Start(int num_threads = -1) {
-  if (num_threads == -1)                                         // assign default number of threads of none is passed as argument.
-    const int num_threads = std::thread::hardware_concurrency(); // Max # of threads the system supports
-  thread_pool.resize(num_threads);                               // vector
+  if (num_threads == -1)                               // assign default number of threads of none is passed as argument.
+    num_threads = std::thread::hardware_concurrency(); // Max # of threads the system supports
+  thread_pool.resize(num_threads);                     // vector
   for (int i = 0; i < num_threads; i++) {
     // Each execution thread is running the ThreadLoop member function.
-    thread_pool.at(i) = std::thread(&ThreadPool::ThreadLoop,
-                                    this); // Implicitly, member function's first argument is a pointer that refers to itself or some
-                                           // instance of the same class type.
+    std::cout << i << '\n';
+    thread_pool.push_back(std::thread(&ThreadPool::ThreadLoop,
+                                      this)); // Implicitly, member function's first argument is a pointer that refers to itself or some
+                                              // instance of the same class type.
   }
 }
 
@@ -113,11 +121,12 @@ public:
     requires Numeric<arg_type>
   void SubmitTask(const std::function<void(arg_type)> &task);
   int Size() { return num_threads; }
-  ZetaSession GetSession(); // If there is an active session, return that one.
+  static ZetaSession GetSession(); // If there is an active session, return that one.
 
 private:
   int num_threads;
   ThreadPool *pool;
+  static ZetaSession curr_session;
 };
 
 template <typename arg_type>
@@ -127,3 +136,10 @@ void ZetaSession::SubmitTask(const std::function<void(arg_type)> &task) {
 }
 
 void ZetaSession::Busy() { pool->Busy(); }
+
+int main() {
+  ZetaSession newZeta{10};
+  using namespace std;
+  cout << newZeta.Size() << '\n';
+  return 0;
+}
