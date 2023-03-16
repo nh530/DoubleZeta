@@ -3,6 +3,7 @@
 #include <queue>
 #include <thread>
 #include <variant>
+#include <vector>
 
 template <typename Typ>
 concept Numeric = std::is_floating_point_v<Typ> || std::numeric_limits<Typ>::is_integer;
@@ -53,12 +54,13 @@ void ThreadPool::ThreadLoop() {
 }
 
 void ThreadPool::Start(int num_threads = -1) {
-  if (num_threads == -1)                               // assign default number of threads of none is passed as argument.
-    num_threads = std::thread::hardware_concurrency(); // Max # of threads the system supports
-  thread_pool.resize(num_threads);                     // vector
+  int threads;
+  if (num_threads == -1)                           // assign default number of threads of none is passed as argument.
+    threads = std::thread::hardware_concurrency(); // Max # of threads the system supports
+  else
+    threads = num_threads;
   for (int i = 0; i < num_threads; i++) {
     // Each execution thread is running the ThreadLoop member function.
-    std::cout << i << '\n';
     thread_pool.push_back(std::thread(&ThreadPool::ThreadLoop,
                                       this)); // Implicitly, member function's first argument is a pointer that refers to itself or some
                                               // instance of the same class type.
@@ -106,33 +108,35 @@ void ThreadPool::Stop() {
 class ZetaSession { // Todo: enforce single session object.
 public:
   ZetaSession(int thread_cnt) : num_threads{thread_cnt} {
-    pool->Start(); // Start thread pool
+    pool.Start(thread_cnt); // Start thread pool
   }
-  ~ZetaSession() { pool->Stop(); }
+  ~ZetaSession() { pool.Stop(); }
   void Busy();
   template <typename arg_type>
     requires Numeric<arg_type>
   void SubmitTask(const std::function<void(arg_type)> &task);
   int Size() { return num_threads; }
   static ZetaSession GetSession(); // If there is an active session, return that one.
+  void Stop();
 
 private:
   int num_threads;
-  ThreadPool *pool;
+  ThreadPool pool;
   static ZetaSession curr_session;
 };
 
 template <typename arg_type>
   requires Numeric<arg_type>
 void ZetaSession::SubmitTask(const std::function<void(arg_type)> &task) {
-  pool->QueueJob(task);
+  pool.QueueJob(task);
 }
 
-void ZetaSession::Busy() { pool->Busy(); }
+void ZetaSession::Busy() { pool.Busy(); }
+void ZetaSession::Stop() { pool.Stop(); }
 
 int main() {
   ZetaSession newZeta{10};
-  using namespace std;
-  cout << newZeta.Size() << '\n';
+  newZeta.Stop();
+  std::cout << "Success!" << '\n';
   return 0;
 }
