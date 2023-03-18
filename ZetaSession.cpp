@@ -13,13 +13,40 @@ struct Result {
   const char *val_type{typeid(value).name()}; // type of value object. i.e. 'i' or 'f'.
 };
 
+class Job {
+
+public:
+  Job(int (*func_ptr)(const void *), void *args);
+  Job(int (*func_ptr)());
+  ~Job();
+  virtual int Run();
+
+private:
+  int (*_func_ptr)(const void *);
+  int (*_func_ptr_no_args)();
+  const void *_args;
+};
+
+Job::Job(int (*func_ptr)(const void *), void *args) : _func_ptr{func_ptr}, _args{args} {}
+Job::Job(int (*func_ptr)()) : _func_ptr_no_args{func_ptr}, _args{NULL} {}
+Job::~Job() {}
+int Job::Run() {
+  // Executes function as pass in arguments.
+  if (_args)
+    return (*_func_ptr)(_args);
+  else
+    return (*_func_ptr_no_args)();
+}
+
 class ThreadPool {
 
 public:
   void Start(int num_threads);
   template <typename arg_type>
     requires Numeric<arg_type>
-  void QueueJob(const std::function<std::variant<int, float>(arg_type)> &job);
+  void QueueJob(const std::function<std::variant<int, float>(arg_type a, arg_type b)> job);
+  void QueueJob(std::function<void()> task);
+  void QueueJob(Job job);
   void Stop();
   bool Busy();
 
@@ -29,8 +56,8 @@ private:
   std::mutex queue_mutex;                  // Prevents data races to the job queue
   std::condition_variable mutex_condition; // Allows threads to wait on new jobs or termination
   std::vector<std::thread> thread_pool;
-  std::queue<std::function<std::variant<int, float>()>> jobs;
-  std::queue<Result> outputs;
+  // std::queue<std::function<std::variant<int, float>()>> jobs;
+  std::queue<Job> jobs;
 };
 
 void ThreadPool::ThreadLoop() {
@@ -39,17 +66,22 @@ void ThreadPool::ThreadLoop() {
         Each thread should be running its own infinite loop, constantly waiting for new tasks to grab and run.
         */
   while (true) {
-    std::function<std::variant<int, float>()> job;
+    // std::function<std::variant<int, float>()> job;
+    Job *job;
+    int results;
     {
       std::unique_lock<std::mutex> lock(queue_mutex);
       mutex_condition.wait(lock, [this] { return !jobs.empty() || should_terminate; });
+      std::cout << std::this_thread::get_id() << '\n';
       if (should_terminate) {
         return;
       }
-      job = jobs.front();
+      job = &jobs.front();
       jobs.pop();
     }
-    outputs.push(Result{job()}); // Execute job and add output to output queue.
+    std::cout << "At execution!" << '\n';
+    results = job->Run(); // Execute job and add output to output queue.
+    std::cout << results << '\n';
   }
 }
 
@@ -69,7 +101,19 @@ void ThreadPool::Start(int num_threads = -1) {
 
 template <typename arg_type>
   requires Numeric<arg_type>
-void ThreadPool::QueueJob(const std::function<std::variant<int, float>(arg_type)> &job) {
+void ThreadPool::QueueJob(const std::function<std::variant<int, float>(arg_type a, arg_type b)> job) {
+  // Add a new job to the pool; use a lock so that there isn't a data race.
+  // thread_pool->QueueJob([] { /* ... */ });
+  {
+    std::unique_lock<std::mutex> lock(queue_mutex);
+    jobs.push(job);
+  }
+  mutex_condition.notify_one();
+}
+
+void ThreadPool::QueueJob(std::function<void()> task) {}
+
+void ThreadPool::QueueJob(Job job) {
   // Add a new job to the pool; use a lock so that there isn't a data race.
   // thread_pool->QueueJob([] { /* ... */ });
   {
@@ -89,7 +133,7 @@ bool ThreadPool::Busy() {
     std::unique_lock<std::mutex> lock(queue_mutex);
     poolbusy = jobs.empty();
   }
-  return poolbusy;
+  return !poolbusy;
 }
 
 void ThreadPool::Stop() {
@@ -105,38 +149,51 @@ void ThreadPool::Stop() {
   thread_pool.clear();
 }
 
-class ZetaSession { // Todo: enforce single session object.
+class ZetaSession {
 public:
   ZetaSession(int thread_cnt) : num_threads{thread_cnt} {
     pool.Start(thread_cnt); // Start thread pool
   }
   ~ZetaSession() { pool.Stop(); }
-  void Busy();
-  template <typename arg_type>
-    requires Numeric<arg_type>
-  void SubmitTask(const std::function<void(arg_type)> &task);
+  bool Busy();
+  void SubmitTask(std::function<void()> task);
+  void SubmitTask(Job task);
   int Size() { return num_threads; }
-  static ZetaSession GetSession(); // If there is an active session, return that one.
-  void Stop();
+  void StartPool();
+  void ShutdownPool();
 
 private:
   int num_threads;
   ThreadPool pool;
-  static ZetaSession curr_session;
 };
 
-template <typename arg_type>
-  requires Numeric<arg_type>
-void ZetaSession::SubmitTask(const std::function<void(arg_type)> &task) {
-  pool.QueueJob(task);
-}
+void ZetaSession::SubmitTask(std::function<void()> task) { pool.QueueJob(task); }
+void ZetaSession::SubmitTask(Job task) { pool.QueueJob(task); }
+bool ZetaSession::Busy() { return pool.Busy(); }
+void ZetaSession::StartPool() { pool.Start(); }
+void ZetaSession::ShutdownPool() { pool.Stop(); }
 
-void ZetaSession::Busy() { pool.Busy(); }
-void ZetaSession::Stop() { pool.Stop(); }
+void some_task(int value, int *to_return) { *to_return = value + 10; }
+int testing_task() {
+  std::cout << "Hi!" << '\n';
+  return 0;
+}
 
 int main() {
   ZetaSession newZeta{10};
-  newZeta.Stop();
+  int *out;
+  some_task(10, out);
+  Job task{&testing_task};
+  newZeta.SubmitTask(task);
+  while (true) {
+    if (newZeta.Busy()) {
+      std::cout << "Still busy!" << '\n';
+      continue;
+    } else {
+      break;
+    }
+  }
+  newZeta.ShutdownPool();
   std::cout << "Success!" << '\n';
   return 0;
 }
