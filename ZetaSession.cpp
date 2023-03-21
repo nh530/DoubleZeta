@@ -86,7 +86,7 @@ void ThreadPool::ThreadLoop() {
 void ThreadPool::Start(int num_threads) {
   int threads;
   if (num_threads == -1) // assign default number of threads if none is passed as argument.
-    threads = std::thread::hardware_concurrency();
+    threads = std::thread::hardware_concurrency() - 2;
   else
     threads = num_threads;
   for (int i = 0; i < num_threads; i++) {
