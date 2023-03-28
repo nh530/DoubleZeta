@@ -21,13 +21,11 @@ public:
   Job(T (*func_ptr)(const T *), T *arg1); // Function takes a single pointer of any type T and returns the same type.
   Job(T (*func_ptr)());                   // Function takes no argument and returns type T.
   Job(T (*func_ptr)(const T), T *arg1, T *arg2);
-  ~Job(); // TODO: Do I have to clean up std::function?
+  ~Job();
   virtual T Run();
 
 private:
-  // T (*_func_ptr)(const T *);
   std::function<T(const T *)> _func_ptr;
-  // T (*_func_ptr_no_args)();
   std::function<T()> _func_ptr_no_args;
   const T *_args;
 };
@@ -49,7 +47,7 @@ public:
   Job(NumericVariant (*func_ptr)(const NumericVariant *), NumericVariant *arg1) : _func_ptr{func_ptr}, _args{arg1} {}
   Job(NumericVariant (*func_ptr)()) : _func_ptr_no_args{func_ptr}, _args{NULL} {}
   Job(NumericVariant (*func_ptr)(const NumericVariant), NumericVariant *arg1, NumericVariant *arg2);
-  Job(float (*func_ptr)()) {
+  Job(float (*func_ptr)()) : _args{NULL} {
     // Handle the conversion from Job<float> to Job<NumericVariant> by creating a new function that outputs NumericVariant.
     std::function<NumericVariant()> temp = [func_ptr]() -> NumericVariant { return (func_ptr()); };
     _func_ptr_no_args = temp;
@@ -70,9 +68,9 @@ public:
   NumericVariant Run() {
     // Executes function and pass in arguments.
     // TODO: Needs to be fleshed out for the different functions that can be ran.
-    if (_args)
+    if (_args) {
       return (_func_ptr)(_args);
-    else
+    } else
       return (_func_ptr_no_args)();
   }
 
@@ -211,6 +209,11 @@ void ZetaSession::ShutdownPool() { pool.Stop(); }
 
 void some_task(int value, int *to_return) { *to_return = value + 10; }
 
+float testing_task2() {
+  std::cout << "Hi!" << '\n';
+  return 0;
+}
+
 NumericVariant testing_task(const NumericVariant *x) {
   std::cout << std::get<float>(*x) << '\n';
   std::cout << "Hi!" << '\n';
@@ -220,8 +223,9 @@ NumericVariant testing_task(const NumericVariant *x) {
 int main() {
   ZetaSession newZeta{10};
   sleep(0);
-  NumericVariant *constt = new NumericVariant{float{20}};
-  Job<NumericVariant> task{&testing_task, constt}; // deletes when main function ends.
+  // NumericVariant *constt = new NumericVariant{float{20}};
+  float constt = float(10);
+  Job<NumericVariant> task{&testing_task2}; // deletes when main function ends.
   newZeta.SubmitTask(task);
   while (true) {
     if (newZeta.Busy()) {
