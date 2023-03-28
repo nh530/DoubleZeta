@@ -7,27 +7,28 @@
 #include <vector>
 
 template <typename T> constexpr bool is_float() { return std::is_floating_point_v<T>; }
-
 template <typename T> constexpr bool is_int() { return std::numeric_limits<T>::is_integer; }
+using NumericVariant = std::variant<float, int>;
+template <typename T> struct is_numerc_variant : public std::false_type {};
+template <> struct is_numerc_variant<NumericVariant> : public std::true_type {};
 
 template <typename T>
-concept Numeric = is_float<T>() || is_int<T>();
-
-template <typename Typ>
-concept Numeric_old = std::is_floating_point_v<Typ> || std::numeric_limits<Typ>::is_integer;
+concept Numeric = is_float<T>() || is_int<T>() || is_numerc_variant<T>::value;
 
 template <Numeric T> class Job {
 
 public:
   Job(T (*func_ptr)(const T *), T *arg1); // Function takes a single pointer of any type T and returns the same type.
   Job(T (*func_ptr)());                   // Function takes no argument and returns type T.
-  Job(T (*func_ptr)(const T *), T *arg1, T *arg2);
+  Job(T (*func_ptr)(const T), T *arg1, T *arg2);
   ~Job();
   virtual T Run();
 
 private:
-  float (*_func_ptr)(const T *);
-  float (*_func_ptr_no_args)();
+  // T (*_func_ptr)(const T *);
+  std::function<T(const T *)> _func_ptr;
+  // T (*_func_ptr_no_args)();
+  std::function<T()> _func_ptr_no_args;
   const T *_args;
 };
 
@@ -38,26 +39,58 @@ template <Numeric T> T Job<T>::Run() {
   // Executes function and pass in arguments.
   // TODO: Needs to be fleshed out for the different functions that can be ran.
   if (_args)
-    return (*_func_ptr)(_args);
+    return (_func_ptr)(_args);
   else
-    return (*_func_ptr_no_args)();
+    return (_func_ptr_no_args)();
 }
+
+template <> class Job<NumericVariant> {
+public:
+  Job(NumericVariant (*func_ptr)(const NumericVariant *), NumericVariant *arg1)
+      : _func_ptr{func_ptr}, _args{arg1} {} // Function takes a single pointer of any type T and returns the same type.
+  Job(NumericVariant (*func_ptr)()) : _func_ptr_no_args{func_ptr}, _args{NULL} {} // Function takes no argument and returns type T.
+  Job(NumericVariant (*func_ptr)(const NumericVariant), NumericVariant *arg1, NumericVariant *arg2);
+  Job(float (*func_ptr)()) {
+    NumericVariant test = func_ptr();
+    // Handle the conversion from Job<float> to Job<NumericVariant> by creating a new function that outputs NumericVariant.
+    std::function<NumericVariant()> temp = [func_ptr]() -> NumericVariant { return (func_ptr()); };
+    this->_func_ptr_no_args = temp;
+  }
+
+  Job(Job<float> other) {
+    // TODO: Access the private function pointer.
+  }
+  ~Job() {}
+  NumericVariant Run() {
+    // Executes function and pass in arguments.
+    // TODO: Needs to be fleshed out for the different functions that can be ran.
+    if (_args)
+      return (_func_ptr)(_args);
+    else
+      return (_func_ptr_no_args)();
+  }
+
+private:
+  std::function<NumericVariant(const NumericVariant *)> _func_ptr;
+  std::function<NumericVariant()> _func_ptr_no_args;
+  const NumericVariant *_args;
+};
 
 class ThreadPool {
 
 public:
   void Start(int num_threads = -1);
-  void QueueJob(Job<float> job);
+  void QueueJob(Job<NumericVariant> job);
   void Stop();
   bool Busy();
 
 private:
   void ThreadLoop();
   bool should_terminate = false;           // Tells threads to stop looking for jobs
-  std::mutex queue_mutex;                  // Prevents data races to the job queue
+  std::mutex queue_mutex;                  // Prevents data races to the job queue; must aquire lock to interact with queue.
   std::condition_variable mutex_condition; // Allows threads to wait on new jobs or termination
   std::vector<std::thread> thread_pool;
-  std::queue<Job<float>> jobs;
+  std::queue<Job<NumericVariant>> jobs;
 };
 
 void ThreadPool::ThreadLoop() {
@@ -66,8 +99,7 @@ void ThreadPool::ThreadLoop() {
         Each thread should be running its own infinite loop, constantly waiting for new tasks to grab and run.
         */
   while (true) {
-    Job<float> *job;
-    int results;
+    Job<NumericVariant> *job;
     {
       std::unique_lock<std::mutex> lock(queue_mutex);
       mutex_condition.wait(lock, [this] { return !jobs.empty() || should_terminate; });
@@ -77,8 +109,8 @@ void ThreadPool::ThreadLoop() {
       job = &jobs.front();
       jobs.pop();
       std::cout << "At execution!" << '\n';
-      results = job->Run(); // Execute job and add output to output queue.
-      std::cout << results << '\n';
+      auto results = job->Run(); // Execute job and add output to output queue.
+      // std::cout << results << '\n';
     }
   }
 }
@@ -98,7 +130,7 @@ void ThreadPool::Start(int num_threads) {
   }
 }
 
-void ThreadPool::QueueJob(Job<float> job) {
+void ThreadPool::QueueJob(Job<NumericVariant> job) {
   // Add a new job to the pool; use a lock so that there isn't a data race.
   // thread_pool->QueueJob([] { /* ... */ });
   {
@@ -141,8 +173,10 @@ public:
   }
   ~ZetaSession() { pool.Stop(); } // Releases resources
   bool Busy();
+  void SubmitTask(NumericVariant (*func)());
+  void SubmitTask(Job<NumericVariant> task);
   void SubmitTask(float (*func)());
-  void SubmitTask(Job<float> task);
+  void SubmitTask(int (*func)());
   int Size() { return num_threads; }
   void StartPool();
   void ShutdownPool();
@@ -152,12 +186,17 @@ private:
   ThreadPool pool;
 };
 
-void ZetaSession::SubmitTask(float (*func)()) {
-  Job<float> task{func};
+void ZetaSession::SubmitTask(NumericVariant (*func)()) {
+  Job<NumericVariant> task{func};
   pool.QueueJob(task);
 }
 
-void ZetaSession::SubmitTask(Job<float> task) { pool.QueueJob(task); }
+void ZetaSession::SubmitTask(float (*func)()) {
+  Job<float> task{func};
+  pool.QueueJob(task); // TODO: This is using the Job(Job<float> other) constructor.
+}
+
+void ZetaSession::SubmitTask(Job<NumericVariant> task) { pool.QueueJob(task); }
 
 bool ZetaSession::Busy() { return pool.Busy(); }
 
@@ -166,8 +205,8 @@ void ZetaSession::ShutdownPool() { pool.Stop(); }
 
 void some_task(int value, int *to_return) { *to_return = value + 10; }
 
-float testing_task(const float *x) {
-  std::cout << *x << '\n';
+NumericVariant testing_task(const NumericVariant *x) {
+  std::cout << std::get<float>(*x) << '\n';
   std::cout << "Hi!" << '\n';
   return 0;
 }
@@ -175,15 +214,15 @@ float testing_task(const float *x) {
 int main() {
   ZetaSession newZeta{10};
   sleep(0);
-  float *constt = new float{20};
-  Job<float> task{&testing_task, constt}; // deletes when main function ends.
+  NumericVariant *constt = new NumericVariant{float{20}};
+  Job<NumericVariant> task{&testing_task, constt}; // deletes when main function ends.
   newZeta.SubmitTask(task);
   while (true) {
     if (newZeta.Busy()) {
       std::cout << "Still Busy!" << '\n';
       continue;
     } else {
-			break;
+      break;
     }
   }
   newZeta.ShutdownPool();
