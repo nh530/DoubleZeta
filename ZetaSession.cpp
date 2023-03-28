@@ -66,7 +66,7 @@ public:
   Job(Job<float> other) {
     // TODO: Access the private function pointer.
   }
-  ~Job() { delete _args; }
+  ~Job() {}
   NumericVariant Run() {
     // Executes function and pass in arguments.
     // TODO: Needs to be fleshed out for the different functions that can be ran.
