@@ -21,7 +21,7 @@ public:
   Job(T (*func_ptr)(const T *), T *arg1); // Function takes a single pointer of any type T and returns the same type.
   Job(T (*func_ptr)());                   // Function takes no argument and returns type T.
   Job(T (*func_ptr)(const T), T *arg1, T *arg2);
-  ~Job();
+  ~Job(); // TODO: Do I have to clean up std::function?
   virtual T Run();
 
 private:
@@ -46,21 +46,27 @@ template <Numeric T> T Job<T>::Run() {
 
 template <> class Job<NumericVariant> {
 public:
-  Job(NumericVariant (*func_ptr)(const NumericVariant *), NumericVariant *arg1)
-      : _func_ptr{func_ptr}, _args{arg1} {} // Function takes a single pointer of any type T and returns the same type.
-  Job(NumericVariant (*func_ptr)()) : _func_ptr_no_args{func_ptr}, _args{NULL} {} // Function takes no argument and returns type T.
+  Job(NumericVariant (*func_ptr)(const NumericVariant *), NumericVariant *arg1) : _func_ptr{func_ptr}, _args{arg1} {}
+  Job(NumericVariant (*func_ptr)()) : _func_ptr_no_args{func_ptr}, _args{NULL} {}
   Job(NumericVariant (*func_ptr)(const NumericVariant), NumericVariant *arg1, NumericVariant *arg2);
   Job(float (*func_ptr)()) {
-    NumericVariant test = func_ptr();
     // Handle the conversion from Job<float> to Job<NumericVariant> by creating a new function that outputs NumericVariant.
     std::function<NumericVariant()> temp = [func_ptr]() -> NumericVariant { return (func_ptr()); };
-    this->_func_ptr_no_args = temp;
+    _func_ptr_no_args = temp;
+  }
+  Job(float (*func_ptr)(const float *), float *arg1) {
+    std::function<NumericVariant(const NumericVariant *)> temp = [func_ptr](const NumericVariant *x) -> NumericVariant {
+      float temp = std::get<float>(*x);
+      return (func_ptr(&temp));
+    };
+    _func_ptr = temp;
+    _args = new NumericVariant{*arg1};
   }
 
   Job(Job<float> other) {
     // TODO: Access the private function pointer.
   }
-  ~Job() {}
+  ~Job() { delete _args; }
   NumericVariant Run() {
     // Executes function and pass in arguments.
     // TODO: Needs to be fleshed out for the different functions that can be ran.
