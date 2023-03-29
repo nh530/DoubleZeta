@@ -20,45 +20,60 @@ template <Numeric T> class Job {
 public:
   Job(T (*func_ptr)(const T *), T *arg1); // Function takes a single pointer of any type T and returns the same type.
   Job(T (*func_ptr)());                   // Function takes no argument and returns type T.
-  Job(T (*func_ptr)(const T), T *arg1, T *arg2);
+  Job(T (*func_ptr)(const T *, const T *), T *arg1, T *arg2);
   ~Job();
   virtual T Run();
 
 private:
+  std::function<T(const T *, const T *)> _func_ptr_2_args;
   std::function<T(const T *)> _func_ptr;
   std::function<T()> _func_ptr_no_args;
   const T *_args;
+  const T *_args2;
 };
 
-template <Numeric T> Job<T>::Job(T (*func_ptr)(const T *), T *arg1) : _func_ptr{func_ptr}, _args{arg1} {}
+template <Numeric T> Job<T>::Job(T (*func_ptr)(const T *), T *arg1) : _func_ptr{func_ptr}, _args{arg1}, _args2{NULL} {}
 template <Numeric T> Job<T>::Job(T (*func_ptr)()) : _func_ptr_no_args{func_ptr}, _args{NULL} {}
+template <Numeric T> Job<T>::Job(T (*func_ptr)(const T *, const T *), T *arg1, T *arg2) : _func_ptr_2_args{func_ptr}, _args{arg1}, _args2{arg2} {}
 template <Numeric T> Job<T>::~Job() {}
 template <Numeric T> T Job<T>::Run() {
   // Executes function and pass in arguments.
-  // TODO: Needs to be fleshed out for the different functions that can be ran.
-  if (_args)
+  if (_args && _args2) {
+    return (_func_ptr_2_args)(_args, _args2);
+  } else if (_args) {
     return (_func_ptr)(_args);
-  else
+  } else
     return (_func_ptr_no_args)();
 }
 
 template <> class Job<NumericVariant> {
 public:
-  Job(NumericVariant (*func_ptr)(const NumericVariant *), NumericVariant *arg1) : _func_ptr{func_ptr}, _args{arg1} {}
-  Job(NumericVariant (*func_ptr)()) : _func_ptr_no_args{func_ptr}, _args{NULL} {}
+  Job(NumericVariant (*func_ptr)(const NumericVariant *), NumericVariant *arg1) : _func_ptr{func_ptr}, _args{arg1}, _args2{NULL} {}
+  Job(NumericVariant (*func_ptr)()) : _func_ptr_no_args{func_ptr}, _args{NULL}, _args2{NULL} {}
   Job(NumericVariant (*func_ptr)(const NumericVariant), NumericVariant *arg1, NumericVariant *arg2);
-  Job(float (*func_ptr)()) : _args{NULL} {
+  Job(float (*func_ptr)()) : _args{NULL}, _args2{NULL} {
     // Handle the conversion from Job<float> to Job<NumericVariant> by creating a new function that outputs NumericVariant.
     std::function<NumericVariant()> temp = [func_ptr]() -> NumericVariant { return (func_ptr()); };
     _func_ptr_no_args = temp;
   }
-  Job(float (*func_ptr)(const float *), float *arg1) {
+  Job(float (*func_ptr)(const float *), float *arg1) : _args2{NULL} {
     std::function<NumericVariant(const NumericVariant *)> temp = [func_ptr](const NumericVariant *x) -> NumericVariant {
       float temp = std::get<float>(*x);
       return (func_ptr(&temp));
     };
     _func_ptr = temp;
     _args = new NumericVariant{*arg1};
+  }
+  Job(float (*func_ptr)(const float *, const float *), float *arg1, float *arg2) {
+    std::function<NumericVariant(const NumericVariant *, const NumericVariant *)> temp = [func_ptr](const NumericVariant *x,
+                                                                                                    const NumericVariant *y) -> NumericVariant {
+      float t_x = std::get<float>(*x);
+      float t_y = std::get<float>(*y);
+      return (func_ptr(&t_x, &t_y));
+    };
+    _func_ptr_2_args = temp;
+    _args = new NumericVariant{*arg1};
+    _args2 = new NumericVariant{*arg2};
   }
 
   Job(Job<float> other) {
@@ -67,17 +82,20 @@ public:
   ~Job() {}
   NumericVariant Run() {
     // Executes function and pass in arguments.
-    // TODO: Needs to be fleshed out for the different functions that can be ran.
-    if (_args) {
+    if (_args && _args2) {
+      return (_func_ptr_2_args)(_args, _args2);
+    } else if (_args) {
       return (_func_ptr)(_args);
     } else
       return (_func_ptr_no_args)();
   }
 
 private:
+  std::function<NumericVariant(const NumericVariant *, const NumericVariant *)> _func_ptr_2_args;
   std::function<NumericVariant(const NumericVariant *)> _func_ptr;
   std::function<NumericVariant()> _func_ptr_no_args;
   const NumericVariant *_args;
+  const NumericVariant *_args2;
 };
 
 class ThreadPool {
@@ -181,6 +199,7 @@ public:
   void SubmitTask(Job<NumericVariant> task);
   void SubmitTask(float (*func)());
   void SubmitTask(int (*func)());
+  void SubmitTask(float (*func)(const float *), float *arg1);
   int Size() { return num_threads; }
   void StartPool();
   void ShutdownPool();
@@ -197,7 +216,12 @@ void ZetaSession::SubmitTask(NumericVariant (*func)()) {
 
 void ZetaSession::SubmitTask(float (*func)()) {
   Job<float> task{func};
-  pool.QueueJob(task); // TODO: This is using the Job(Job<float> other) constructor.
+  pool.QueueJob(task);
+}
+
+void ZetaSession::SubmitTask(float (*func)(const float *), float *arg1) {
+  Job<float> task{func, arg1};
+  pool.QueueJob(task);
 }
 
 void ZetaSession::SubmitTask(Job<NumericVariant> task) { pool.QueueJob(task); }
@@ -209,7 +233,9 @@ void ZetaSession::ShutdownPool() { pool.Stop(); }
 
 void some_task(int value, int *to_return) { *to_return = value + 10; }
 
-float testing_task2() {
+float testing_task2(const float *x, const float *a) {
+  std::cout << *x << '\n';
+  std::cout << a << '\n';
   std::cout << "Hi!" << '\n';
   return 0;
 }
@@ -225,7 +251,8 @@ int main() {
   sleep(0);
   // NumericVariant *constt = new NumericVariant{float{20}};
   float constt = float(10);
-  Job<NumericVariant> task{&testing_task2}; // deletes when main function ends.
+  float consta = float(1313);
+  Job<NumericVariant> task{&testing_task2, &constt, &consta}; // deletes when main function ends.
   newZeta.SubmitTask(task);
   while (true) {
     if (newZeta.Busy()) {
