@@ -95,6 +95,26 @@ public:
     _args = new NumericVariant{*arg1};
     _args2 = new NumericVariant{*arg2};
   }
+  Job(int (*func_ptr)(const int *), int *arg1) : _args2{NULL} {
+    std::function<NumericVariant(const NumericVariant *)> temp = [func_ptr](const NumericVariant *x) -> NumericVariant {
+      int temp = std::get<int>(*x);
+      return (func_ptr(&temp));
+    };
+    _func_ptr = temp;
+    _args = new NumericVariant{*arg1};
+  }
+
+  Job(int (*func_ptr)(const int *, const int *), int *arg1, int *arg2) {
+    std::function<NumericVariant(const NumericVariant *, const NumericVariant *)> temp = [func_ptr](const NumericVariant *x,
+                                                                                                    const NumericVariant *y) -> NumericVariant {
+      int t_x = std::get<int>(*x);
+      int t_y = std::get<int>(*y);
+      return (func_ptr(&t_x, &t_y));
+    };
+    _func_ptr_2_args = temp;
+    _args = new NumericVariant{*arg1};
+    _args2 = new NumericVariant{*arg2};
+  }
 
   Job(Job<float> other) {
     // TODO: Access the private function pointer.
@@ -273,9 +293,9 @@ void ZetaSession::ShutdownPool() { pool.Stop(); }
 
 void some_task(int value, int *to_return) { *to_return = value + 10; }
 
-float testing_task2(const float *x, const float *a) {
+int testing_task2(const int *x, const int *a) {
   std::cout << *x << '\n';
-  std::cout << a << '\n';
+  std::cout << *a << '\n';
   std::cout << "Hi!" << '\n';
   return 0;
 }
@@ -290,8 +310,8 @@ int main() {
   ZetaSession newZeta{10};
   sleep(0);
   // NumericVariant *constt = new NumericVariant{float{20}};
-  float constt = float(10);
-  float consta = float(1313);
+  int constt = 10;
+  int consta = 1313;
   Job<NumericVariant> task{&testing_task2, &constt, &consta}; // deletes when main function ends.
   newZeta.SubmitTask(task);
   while (true) {
