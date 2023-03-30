@@ -21,6 +21,8 @@ public:
   Job(T (*func_ptr)(const T *), T *arg1); // Function takes a single pointer of any type T and returns the same type.
   Job(T (*func_ptr)());                   // Function takes no argument and returns type T.
   Job(T (*func_ptr)(const T *, const T *), T *arg1, T *arg2);
+  Job(const Job<T> &other);
+  Job &operator=(const Job<T> &a);
   ~Job();
   virtual T Run();
 
@@ -33,9 +35,27 @@ private:
 };
 
 template <Numeric T> Job<T>::Job(T (*func_ptr)(const T *), T *arg1) : _func_ptr{func_ptr}, _args{arg1}, _args2{NULL} {}
-template <Numeric T> Job<T>::Job(T (*func_ptr)()) : _func_ptr_no_args{func_ptr}, _args{NULL} {}
+template <Numeric T> Job<T>::Job(T (*func_ptr)()) : _func_ptr_no_args{func_ptr}, _args{NULL}, _args2{NULL} {}
 template <Numeric T> Job<T>::Job(T (*func_ptr)(const T *, const T *), T *arg1, T *arg2) : _func_ptr_2_args{func_ptr}, _args{arg1}, _args2{arg2} {}
-template <Numeric T> Job<T>::~Job() {}
+template <Numeric T>
+Job<T>::Job(const Job<T> &other)
+    : _args2{new T{*other._args2}}, _func_ptr{other._func_ptr}, _func_ptr_no_args{other._func_ptr_no_args}, _func_ptr_2_args{other._func_ptr_2_args} {
+  _args = new T{*other._args};
+}
+template <Numeric T> Job<T> &Job<T>::operator=(const Job<T> &other) {
+  delete _args;
+  _args = new T{*other._args};
+  delete _args2;
+  _args2 = new T{*other._args2};
+  _func_ptr = other._func_ptr;
+  _func_ptr_2_args = other._func_ptr_2_args;
+  _func_ptr_no_args = other._func_ptr_no_args;
+}
+
+template <Numeric T> Job<T>::~Job() {
+  delete _args;
+  delete _args2;
+}
 template <Numeric T> T Job<T>::Run() {
   // Executes function and pass in arguments.
   if (_args && _args2) {
@@ -79,7 +99,29 @@ public:
   Job(Job<float> other) {
     // TODO: Access the private function pointer.
   }
-  ~Job() {}
+
+  Job(const Job<NumericVariant> &other)
+      : _args2{new NumericVariant{*other._args2}}, _func_ptr{other._func_ptr}, _func_ptr_no_args{other._func_ptr_no_args},
+        _func_ptr_2_args{other._func_ptr_2_args} {
+    _args = new NumericVariant{*other._args};
+  }
+
+  Job &operator=(const Job &other) {
+    delete _args;
+    _args = new NumericVariant{*other._args};
+    delete _args2;
+    _args2 = new NumericVariant{*other._args2};
+    _func_ptr = other._func_ptr; // Copy assignment.
+    _func_ptr_2_args = other._func_ptr_2_args;
+    _func_ptr_no_args = other._func_ptr_no_args;
+
+    return *this;
+  }
+
+  ~Job() {
+    delete _args;
+    delete _args2;
+  }
   NumericVariant Run() {
     // Executes function and pass in arguments.
     if (_args && _args2) {
@@ -121,17 +163,16 @@ void ThreadPool::ThreadLoop() {
         Each thread should be running its own infinite loop, constantly waiting for new tasks to grab and run.
         */
   while (true) {
-    Job<NumericVariant> *job;
     {
       std::unique_lock<std::mutex> lock(queue_mutex);
       mutex_condition.wait(lock, [this] { return !jobs.empty() || should_terminate; });
       if (should_terminate && jobs.empty()) {
         return;
       }
-      job = &jobs.front();
+      Job<NumericVariant> job = jobs.front();
       jobs.pop();
       std::cout << "At execution!" << '\n';
-      auto results = job->Run(); // Execute job and add output to output queue.
+      auto results = job.Run(); // Execute job and add output to output queue.
       // std::cout << results << '\n';
     }
   }
@@ -145,7 +186,6 @@ void ThreadPool::Start(int num_threads) {
     threads = num_threads;
   for (int i = 0; i < num_threads; i++) {
     // Each execution thread is running the ThreadLoop member function.
-    std::cout << i << '\n';
     thread_pool.push_back(std::thread(&ThreadPool::ThreadLoop,
                                       this)); // Implicitly, member function's first argument is a pointer that refers to itself or some
                                               // instance of the same class type.
