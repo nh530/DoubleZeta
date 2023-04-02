@@ -1,3 +1,5 @@
+#include "Algebra.h"
+#include "DTypes.h"
 #include <any>
 #include <iostream>
 #include <queue>
@@ -5,15 +7,6 @@
 #include <unistd.h>
 #include <variant>
 #include <vector>
-
-template <typename T> constexpr bool is_float() { return std::is_floating_point_v<T>; }
-template <typename T> constexpr bool is_int() { return std::numeric_limits<T>::is_integer; }
-using NumericVariant = std::variant<float, int>;
-template <typename T> struct is_numerc_variant : public std::false_type {};
-template <> struct is_numerc_variant<NumericVariant> : public std::true_type {};
-
-template <typename T>
-concept Numeric = is_float<T>() || is_int<T>() || is_numerc_variant<T>::value;
 
 template <Numeric T> class Job {
 
@@ -191,7 +184,6 @@ void ThreadPool::ThreadLoop() {
       }
       Job<NumericVariant> job = jobs.front();
       jobs.pop();
-      std::cout << "At execution!" << '\n';
       auto results = job.Run(); // Execute job and add output to output queue.
       // std::cout << results << '\n';
     }
@@ -293,27 +285,15 @@ void ZetaSession::ShutdownPool() { pool.Stop(); }
 
 void some_task(int value, int *to_return) { *to_return = value + 10; }
 
-int testing_task2(const int *x, const int *a) {
-  std::cout << *x << '\n';
-  std::cout << *a << '\n';
-  std::cout << "Hi!" << '\n';
-  return 0;
-}
-
-NumericVariant testing_task(const NumericVariant *x) {
-  std::cout << std::get<float>(*x) << '\n';
-  std::cout << "Hi!" << '\n';
-  return 0;
-}
-
 int main() {
   ZetaSession newZeta{10};
   sleep(0);
   // NumericVariant *constt = new NumericVariant{float{20}};
   int constt = 10;
   int consta = 1313;
-  Job<NumericVariant> task{&testing_task2, &constt, &consta}; // deletes when main function ends.
-  newZeta.SubmitTask(task);
+  Job<NumericVariant> task2{&subtract, &constt, &consta};
+  newZeta.SubmitTask(task2);
+
   while (true) {
     if (newZeta.Busy()) {
       std::cout << "Still Busy!" << '\n';
