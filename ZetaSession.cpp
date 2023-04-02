@@ -77,6 +77,14 @@ public:
     _func_ptr = temp;
     _args = new NumericVariant{*arg1};
   }
+  Job(float (*func_ptr)(const float), float arg1) : _args2{NULL} {
+    std::function<NumericVariant(const NumericVariant *)> temp = [func_ptr](const NumericVariant *x) -> NumericVariant {
+      float temp = std::get<float>(*x);
+      return (func_ptr(temp));
+    };
+    _func_ptr = temp;
+    _args = new NumericVariant{arg1};
+  }
   Job(float (*func_ptr)(const float *, const float *), float *arg1, float *arg2) {
     std::function<NumericVariant(const NumericVariant *, const NumericVariant *)> temp = [func_ptr](const NumericVariant *x,
                                                                                                     const NumericVariant *y) -> NumericVariant {
@@ -88,6 +96,17 @@ public:
     _args = new NumericVariant{*arg1};
     _args2 = new NumericVariant{*arg2};
   }
+  Job(float (*func_ptr)(const float, const float), float arg1, float arg2) {
+    std::function<NumericVariant(const NumericVariant *, const NumericVariant *)> temp = [func_ptr](const NumericVariant *x,
+                                                                                                    const NumericVariant *y) -> NumericVariant {
+      float t_x = std::get<float>(*x);
+      float t_y = std::get<float>(*y);
+      return (func_ptr(t_x, t_y));
+    };
+    _func_ptr_2_args = temp;
+    _args = new NumericVariant{arg1};
+    _args2 = new NumericVariant{arg2};
+  }
   Job(int (*func_ptr)(const int *), int *arg1) : _args2{NULL} {
     std::function<NumericVariant(const NumericVariant *)> temp = [func_ptr](const NumericVariant *x) -> NumericVariant {
       int temp = std::get<int>(*x);
@@ -96,7 +115,14 @@ public:
     _func_ptr = temp;
     _args = new NumericVariant{*arg1};
   }
-
+  Job(int (*func_ptr)(const int), int arg1) : _args2{NULL} {
+    std::function<NumericVariant(const NumericVariant *)> temp = [func_ptr](const NumericVariant *x) -> NumericVariant {
+      int temp = std::get<int>(*x);
+      return (func_ptr(temp));
+    };
+    _func_ptr = temp;
+    _args = new NumericVariant{arg1};
+  }
   Job(int (*func_ptr)(const int *, const int *), int *arg1, int *arg2) {
     std::function<NumericVariant(const NumericVariant *, const NumericVariant *)> temp = [func_ptr](const NumericVariant *x,
                                                                                                     const NumericVariant *y) -> NumericVariant {
@@ -108,17 +134,25 @@ public:
     _args = new NumericVariant{*arg1};
     _args2 = new NumericVariant{*arg2};
   }
-
+  Job(int (*func_ptr)(const int, const int), int arg1, int arg2) {
+    std::function<NumericVariant(const NumericVariant *, const NumericVariant *)> temp = [func_ptr](const NumericVariant *x,
+                                                                                                    const NumericVariant *y) -> NumericVariant {
+      int t_x = std::get<int>(*x);
+      int t_y = std::get<int>(*y);
+      return (func_ptr(t_x, t_y));
+    };
+    _func_ptr_2_args = temp;
+    _args = new NumericVariant{arg1};
+    _args2 = new NumericVariant{arg2};
+  }
   Job(Job<float> other) {
     // TODO: Access the private function pointer.
   }
-
   Job(const Job<NumericVariant> &other)
       : _args2{new NumericVariant{*other._args2}}, _func_ptr{other._func_ptr}, _func_ptr_no_args{other._func_ptr_no_args},
         _func_ptr_2_args{other._func_ptr_2_args} {
     _args = new NumericVariant{*other._args};
   }
-
   Job &operator=(const Job &other) {
     delete _args;
     _args = new NumericVariant{*other._args};
@@ -130,7 +164,6 @@ public:
 
     return *this;
   }
-
   ~Job() {
     delete _args;
     delete _args2;
