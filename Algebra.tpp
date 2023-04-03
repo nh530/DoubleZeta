@@ -4,6 +4,9 @@
 #include <iostream>
 #include <type_traits>
 
+#ifndef ALGEBRA_TPP
+#define ALGEBRA_TPP
+
 template <Numeric Type> Type sum(const Type *a, const Type *b) {
   Type out;
   // Py_BEGIN_ALLOW_THREADS
@@ -109,3 +112,4 @@ template <Numeric Type> Type *power(Type *data, int size_of, Type val) {
   // Py_END_ALLOW_THREADS
   return data;
 }
+#endif
