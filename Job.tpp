@@ -39,87 +39,56 @@ template <Numeric T> T Job<T>::Run() {
 
 Job<NumericVariant>::Job(NumericVariant (*func_ptr)(const NumericVariant *), NumericVariant *arg1) : _func_ptr{func_ptr}, _args{arg1}, _args2{NULL} {}
 Job<NumericVariant>::Job(NumericVariant (*func_ptr)()) : _func_ptr_no_args{func_ptr}, _args{NULL}, _args2{NULL} {}
-Job<NumericVariant>::Job(float (*func_ptr)()) : _args{NULL}, _args2{NULL} {
+template <int_or_float T> Job<NumericVariant>::Job(T (*func_ptr)()) : _args{NULL}, _args2{NULL} {
   // Handle the conversion from Job<float> to Job<NumericVariant> by creating a new function that outputs NumericVariant.
-  std::function<NumericVariant()> temp = [func_ptr]() -> NumericVariant { return (func_ptr()); };
+  std::function<NumericVariant()> temp = [func_ptr]() -> NumericVariant {
+    return (func_ptr()); // Output gets casted or wrapped by std::variant<float, int>
+  };
   _func_ptr_no_args = temp;
 }
-Job<NumericVariant>::Job(float (*func_ptr)(const float *), float *arg1) : _args2{NULL} {
+
+template <int_or_float T> Job<NumericVariant>::Job(T (*func_ptr)(const T *), T *arg1) : _args2{NULL} {
   std::function<NumericVariant(const NumericVariant *)> temp = [func_ptr](const NumericVariant *x) -> NumericVariant {
-    float temp = std::get<float>(*x);
+    T temp = std::get<T>(*x);
     return (func_ptr(&temp));
   };
   _func_ptr = temp;
   _args = new NumericVariant{*arg1};
 }
-Job<NumericVariant>::Job(float (*func_ptr)(const float), float arg1) : _args2{NULL} {
+
+template <int_or_float T> Job<NumericVariant>::Job(T (*func_ptr)(const T), T arg1) : _args2{NULL} {
   std::function<NumericVariant(const NumericVariant *)> temp = [func_ptr](const NumericVariant *x) -> NumericVariant {
-    float temp = std::get<float>(*x);
+    T temp = std::get<T>(*x);
     return (func_ptr(temp));
   };
   _func_ptr = temp;
   _args = new NumericVariant{arg1};
 }
-Job<NumericVariant>::Job(float (*func_ptr)(const float *, const float *), float *arg1, float *arg2) {
+
+template <int_or_float T> Job<NumericVariant>::Job(T (*func_ptr)(const T *, const T *), T *arg1, T *arg2) {
   std::function<NumericVariant(const NumericVariant *, const NumericVariant *)> temp = [func_ptr](const NumericVariant *x,
                                                                                                   const NumericVariant *y) -> NumericVariant {
-    float t_x = std::get<float>(*x);
-    float t_y = std::get<float>(*y);
+    T t_x = std::get<T>(*x);
+    T t_y = std::get<T>(*y);
     return (func_ptr(&t_x, &t_y));
   };
   _func_ptr_2_args = temp;
   _args = new NumericVariant{*arg1};
   _args2 = new NumericVariant{*arg2};
 }
-Job<NumericVariant>::Job(float (*func_ptr)(const float, const float), float arg1, float arg2) {
+
+template <int_or_float T> Job<NumericVariant>::Job(T (*func_ptr)(const T, const T), T arg1, T arg2) {
   std::function<NumericVariant(const NumericVariant *, const NumericVariant *)> temp = [func_ptr](const NumericVariant *x,
                                                                                                   const NumericVariant *y) -> NumericVariant {
-    float t_x = std::get<float>(*x);
-    float t_y = std::get<float>(*y);
+    T t_x = std::get<T>(*x);
+    T t_y = std::get<T>(*y);
     return (func_ptr(t_x, t_y));
   };
   _func_ptr_2_args = temp;
   _args = new NumericVariant{arg1};
   _args2 = new NumericVariant{arg2};
 }
-Job<NumericVariant>::Job(int (*func_ptr)(const int *), int *arg1) : _args2{NULL} {
-  std::function<NumericVariant(const NumericVariant *)> temp = [func_ptr](const NumericVariant *x) -> NumericVariant {
-    int temp = std::get<int>(*x);
-    return (func_ptr(&temp));
-  };
-  _func_ptr = temp;
-  _args = new NumericVariant{*arg1};
-}
-Job<NumericVariant>::Job(int (*func_ptr)(const int), int arg1) : _args2{NULL} {
-  std::function<NumericVariant(const NumericVariant *)> temp = [func_ptr](const NumericVariant *x) -> NumericVariant {
-    int temp = std::get<int>(*x);
-    return (func_ptr(temp));
-  };
-  _func_ptr = temp;
-  _args = new NumericVariant{arg1};
-}
-Job<NumericVariant>::Job(int (*func_ptr)(const int *, const int *), int *arg1, int *arg2) {
-  std::function<NumericVariant(const NumericVariant *, const NumericVariant *)> temp = [func_ptr](const NumericVariant *x,
-                                                                                                  const NumericVariant *y) -> NumericVariant {
-    int t_x = std::get<int>(*x);
-    int t_y = std::get<int>(*y);
-    return (func_ptr(&t_x, &t_y));
-  };
-  _func_ptr_2_args = temp;
-  _args = new NumericVariant{*arg1};
-  _args2 = new NumericVariant{*arg2};
-}
-Job<NumericVariant>::Job(int (*func_ptr)(const int, const int), int arg1, int arg2) {
-  std::function<NumericVariant(const NumericVariant *, const NumericVariant *)> temp = [func_ptr](const NumericVariant *x,
-                                                                                                  const NumericVariant *y) -> NumericVariant {
-    int t_x = std::get<int>(*x);
-    int t_y = std::get<int>(*y);
-    return (func_ptr(t_x, t_y));
-  };
-  _func_ptr_2_args = temp;
-  _args = new NumericVariant{arg1};
-  _args2 = new NumericVariant{arg2};
-}
+
 Job<NumericVariant>::Job(Job<float> other) {
   // TODO: Access the private function pointer.
 }

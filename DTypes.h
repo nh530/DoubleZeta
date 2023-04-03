@@ -14,6 +14,9 @@ template <typename T> struct is_numerc_variant : public std::false_type {};
 template <> struct is_numerc_variant<NumericVariant> : public std::true_type {};
 
 template <typename T>
+concept int_or_float = is_float<T>() || is_int<T>();
+
+template <typename T>
 concept Numeric = is_float<T>() || is_int<T>() || is_numerc_variant<T>::value;
 
 #endif
