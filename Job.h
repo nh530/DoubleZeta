@@ -21,6 +21,34 @@ private:
   const T *_args2;
 };
 
+template <> class Job<NumericVariant> {
+public:
+  Job(NumericVariant (*func_ptr)(const NumericVariant *), NumericVariant *arg1);
+  Job(NumericVariant (*func_ptr)());
+  Job(NumericVariant (*func_ptr)(const NumericVariant), NumericVariant *arg1, NumericVariant *arg2);
+  Job(float (*func_ptr)());
+  Job(float (*func_ptr)(const float *), float *arg1);
+  Job(float (*func_ptr)(const float), float arg1);
+  Job(float (*func_ptr)(const float *, const float *), float *arg1, float *arg2);
+  Job(float (*func_ptr)(const float, const float), float arg1, float arg2);
+  Job(int (*func_ptr)(const int *), int *arg1);
+  Job(int (*func_ptr)(const int), int arg1);
+  Job(int (*func_ptr)(const int *, const int *), int *arg1, int *arg2);
+  Job(int (*func_ptr)(const int, const int), int arg1, int arg2);
+  Job(Job<float> other);
+  Job(const Job<NumericVariant> &other);
+  Job &operator=(const Job &other);
+  ~Job();
+  NumericVariant Run();
+
+private:
+  std::function<NumericVariant(const NumericVariant *, const NumericVariant *)> _func_ptr_2_args;
+  std::function<NumericVariant(const NumericVariant *)> _func_ptr;
+  std::function<NumericVariant()> _func_ptr_no_args;
+  const NumericVariant *_args;
+  const NumericVariant *_args2;
+};
+
 #include "Job.tpp"
 
 #endif
