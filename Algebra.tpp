@@ -34,7 +34,7 @@ template <Numeric Type> Type divide(const Type *a, const Type *b) {
 template <Numeric Type> Type subtract(const Type *a, const Type *b) {
   Type out;
   // Py_BEGIN_ALLOW_THREADS
-  out = a - b;
+  out = *a - *b;
   // Py_END_ALLOW_THREADS
   return out;
 }
