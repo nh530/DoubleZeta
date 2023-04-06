@@ -1,5 +1,11 @@
+/*
+TODO: Templates classes and functions might not be callable from python because compiler needs to see the template arguments that are used in order to
+create the corresponding overloaded func/method/class.
+Reference: https://isocpp.org/wiki/faq/templates#templates-defn-vs-decl
+*/
 #include "DTypes.h"
 #include <functional>
+#include <future>
 #ifndef JOB_H
 #define JOB_H
 
@@ -32,25 +38,28 @@ public:
   template <int_or_float T> Job(T (*func_ptr)(const T *, const T *), T *arg1, T *arg2);
   template <int_or_float T> Job(T (*func_ptr)(const T, const T), T arg1, T arg2);
 
-  //Job(float (*func_ptr)());
-  //Job(float (*func_ptr)(const float *), float *arg1);
-  //Job(float (*func_ptr)(const float), float arg1);
-  //Job(float (*func_ptr)(const float *, const float *), float *arg1, float *arg2);
-  //Job(float (*func_ptr)(const float, const float), float arg1, float arg2);
-  //Job(int (*func_ptr)(const int *), int *arg1);
-  //Job(int (*func_ptr)(const int), int arg1);
-  //Job(int (*func_ptr)(const int *, const int *), int *arg1, int *arg2);
-  //Job(int (*func_ptr)(const int, const int), int arg1, int arg2);
+  // Job(float (*func_ptr)());
+  // Job(float (*func_ptr)(const float *), float *arg1);
+  // Job(float (*func_ptr)(const float), float arg1);
+  // Job(float (*func_ptr)(const float *, const float *), float *arg1, float *arg2);
+  // Job(float (*func_ptr)(const float, const float), float arg1, float arg2);
+  // Job(int (*func_ptr)(const int *), int *arg1);
+  // Job(int (*func_ptr)(const int), int arg1);
+  // Job(int (*func_ptr)(const int *, const int *), int *arg1, int *arg2);
+  // Job(int (*func_ptr)(const int, const int), int arg1, int arg2);
   Job(Job<float> other);
-  Job(const Job<NumericVariant> &other);
-  Job &operator=(const Job &other);
+  Job(Job<NumericVariant> &other) = delete;
+  Job &operator=(Job<NumericVariant> &other) = delete;
+  Job(Job<NumericVariant> &&other);
+  Job &operator=(Job<NumericVariant> &&other);
   ~Job();
-  NumericVariant Run();
+  void Run();
+  std::future<NumericVariant> GetFuture();
 
 private:
-  std::function<NumericVariant(const NumericVariant *, const NumericVariant *)> _func_ptr_2_args;
-  std::function<NumericVariant(const NumericVariant *)> _func_ptr;
-  std::function<NumericVariant()> _func_ptr_no_args;
+  std::packaged_task<NumericVariant(const NumericVariant *, const NumericVariant *)> *_func_ptr_2_args;
+  std::packaged_task<NumericVariant(const NumericVariant *)> *_func_ptr;
+  std::packaged_task<NumericVariant()> *_func_ptr_no_args;
   const NumericVariant *_args;
   const NumericVariant *_args2;
 };
