@@ -38,10 +38,9 @@ void ThreadPool::ThreadLoop() {
       if (should_terminate && jobs.empty()) {
         return;
       }
-      Job<NumericVariant> job = jobs.front();
+      Job<NumericVariant> job = std::move(jobs.front());
       jobs.pop();
-      auto results = job.Run(); // Execute job and add output to output queue.
-      // std::cout << results << '\n';
+      job.Run(); // Execute job
     }
   }
 }
@@ -65,7 +64,7 @@ void ThreadPool::QueueJob(Job<NumericVariant> job) {
   // thread_pool->QueueJob([] { /* ... */ });
   {
     std::unique_lock<std::mutex> lock(queue_mutex);
-    jobs.push(job);
+    jobs.push(std::move(job));
   }
   mutex_condition.notify_one();
 }
@@ -108,6 +107,9 @@ public:
   void SubmitTask(float (*func)());
   void SubmitTask(int (*func)());
   void SubmitTask(float (*func)(const float *), float *arg1);
+	void SubmitTask(int (*func)(const int *), int *arg1);
+	void SubmitTask(int (*func)(const int *, const int *), int *arg1, int *arg2);
+	void SubmitTask(float (*func)(const float *, const float *), float *arg1, float *arg2);
   int Size() { return num_threads; }
   void StartPool();
   void ShutdownPool();
@@ -119,7 +121,7 @@ private:
 
 void ZetaSession::SubmitTask(NumericVariant (*func)()) {
   Job<NumericVariant> task{func};
-  pool.QueueJob(task);
+  pool.QueueJob(std::move(task));
 }
 
 void ZetaSession::SubmitTask(float (*func)()) {
@@ -128,11 +130,17 @@ void ZetaSession::SubmitTask(float (*func)()) {
 }
 
 void ZetaSession::SubmitTask(float (*func)(const float *), float *arg1) {
-  Job<float> task{func, arg1};
-  pool.QueueJob(task);
+  Job<NumericVariant> task{func, arg1};
+  pool.QueueJob(std::move(task));
 }
 
-void ZetaSession::SubmitTask(Job<NumericVariant> task) { pool.QueueJob(task); }
+void ZetaSession::SubmitTask(int (*func)(const int *, const int *), int *arg1, int *arg2) {
+  Job<NumericVariant> task{func, arg1, arg2};
+  pool.QueueJob(std::move(task));
+}
+
+
+void ZetaSession::SubmitTask(Job<NumericVariant> task) { pool.QueueJob(std::move(task)); }
 
 bool ZetaSession::Busy() { return pool.Busy(); }
 
@@ -148,7 +156,11 @@ int main() {
   int constt = 10;
   int consta = 1313;
   Job<NumericVariant> task2{&subtract, &constt, &consta};
-  newZeta.SubmitTask(task2);
+	std::future<NumericVariant> test = task2.GetFuture();
+  newZeta.SubmitTask(std::move(task2));
+	newZeta.SubmitTask(&subtract, &constt, &consta);
+	test.wait();
+	std::cout << std::get<int>(test.get()) << '\n';
 
   while (true) {
     if (newZeta.Busy()) {
