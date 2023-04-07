@@ -102,14 +102,11 @@ public:
   }
   ~ZetaSession() { pool.Stop(); } // Releases resources
   bool Busy();
-  void SubmitTask(NumericVariant (*func)());
+  std::future<NumericVariant> SubmitTask(NumericVariant (*func)());
   void SubmitTask(Job<NumericVariant> task);
-  void SubmitTask(float (*func)());
-  void SubmitTask(int (*func)());
-  void SubmitTask(float (*func)(const float *), float *arg1);
-	void SubmitTask(int (*func)(const int *), int *arg1);
-	void SubmitTask(int (*func)(const int *, const int *), int *arg1, int *arg2);
-	void SubmitTask(float (*func)(const float *, const float *), float *arg1, float *arg2);
+  template <int_or_float T> std::future<NumericVariant> SubmitTask(T (*func)());
+  template <int_or_float T> std::future<NumericVariant> SubmitTask(T (*func)(const T *), T *arg1);
+  template <int_or_float T> std::future<NumericVariant> SubmitTask(T (*func)(const T *, const T *), T *arg1, T *arg2);
   int Size() { return num_threads; }
   void StartPool();
   void ShutdownPool();
@@ -119,26 +116,31 @@ private:
   ThreadPool pool;
 };
 
-void ZetaSession::SubmitTask(NumericVariant (*func)()) {
+std::future<NumericVariant> ZetaSession::SubmitTask(NumericVariant (*func)()) {
   Job<NumericVariant> task{func};
+  std::future<NumericVariant> out = task.GetFuture();
   pool.QueueJob(std::move(task));
+  return out;
 }
 
-void ZetaSession::SubmitTask(float (*func)()) {
-  Job<float> task{func};
-  pool.QueueJob(task);
+template <int_or_float T> std::future<NumericVariant> ZetaSession::SubmitTask(T (*func)()) {
+  Job<NumericVariant> task{func};
+	std::future<NumericVariant> out = task.GetFuture();
+  pool.QueueJob(std::move(task));
+  return out;
 }
-
-void ZetaSession::SubmitTask(float (*func)(const float *), float *arg1) {
+template <int_or_float T> std::future<NumericVariant> ZetaSession::SubmitTask(T (*func)(const T *), T *arg1) {
   Job<NumericVariant> task{func, arg1};
+	std::future<NumericVariant> out = task.GetFuture();
   pool.QueueJob(std::move(task));
+  return out;
 }
-
-void ZetaSession::SubmitTask(int (*func)(const int *, const int *), int *arg1, int *arg2) {
+template <int_or_float T> std::future<NumericVariant> ZetaSession::SubmitTask(T (*func)(const T *, const T *), T *arg1, T *arg2) {
   Job<NumericVariant> task{func, arg1, arg2};
+  std::future<NumericVariant> out = task.GetFuture();
   pool.QueueJob(std::move(task));
+  return out;
 }
-
 
 void ZetaSession::SubmitTask(Job<NumericVariant> task) { pool.QueueJob(std::move(task)); }
 
@@ -156,11 +158,11 @@ int main() {
   int constt = 10;
   int consta = 1313;
   Job<NumericVariant> task2{&subtract, &constt, &consta};
-	std::future<NumericVariant> test = task2.GetFuture();
+  std::future<NumericVariant> test = task2.GetFuture();
   newZeta.SubmitTask(std::move(task2));
-	newZeta.SubmitTask(&subtract, &constt, &consta);
-	test.wait();
-	std::cout << std::get<int>(test.get()) << '\n';
+  auto anoda = newZeta.SubmitTask(&subtract, &constt, &consta);
+  test.wait();
+  std::cout << std::get<int>(test.get()) << '\n';
 
   while (true) {
     if (newZeta.Busy()) {
