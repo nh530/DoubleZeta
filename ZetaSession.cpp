@@ -1,3 +1,11 @@
+/* The goal of these user defined types is to create a multi-threaded, parallel and concurrent, framework that can process
+ * commonly found algebraic operations in mathematics. Fundamental algebra operations can be found in in the Algebra header file.
+ * From which, more complex mathematical equations can be represented in a manner that supports parallel processing.
+ *
+ * Notes: It is difficult to implement the parallel computing of a single math equation. What is easily doable is to implement the
+ * parallel computing of many equations.
+ */
+
 #include "Algebra.h"
 #include "DTypes.h"
 #include "Job.h"
@@ -122,16 +130,15 @@ std::future<NumericVariant> ZetaSession::SubmitTask(NumericVariant (*func)()) {
   pool.QueueJob(std::move(task));
   return out;
 }
-
 template <int_or_float T> std::future<NumericVariant> ZetaSession::SubmitTask(T (*func)()) {
   Job<NumericVariant> task{func};
-	std::future<NumericVariant> out = task.GetFuture();
+  std::future<NumericVariant> out = task.GetFuture();
   pool.QueueJob(std::move(task));
   return out;
 }
 template <int_or_float T> std::future<NumericVariant> ZetaSession::SubmitTask(T (*func)(const T *), T *arg1) {
   Job<NumericVariant> task{func, arg1};
-	std::future<NumericVariant> out = task.GetFuture();
+  std::future<NumericVariant> out = task.GetFuture();
   pool.QueueJob(std::move(task));
   return out;
 }
@@ -143,12 +150,9 @@ template <int_or_float T> std::future<NumericVariant> ZetaSession::SubmitTask(T 
 }
 
 void ZetaSession::SubmitTask(Job<NumericVariant> task) { pool.QueueJob(std::move(task)); }
-
 bool ZetaSession::Busy() { return pool.Busy(); }
-
 void ZetaSession::StartPool() { pool.Start(); }
 void ZetaSession::ShutdownPool() { pool.Stop(); }
-
 void some_task(int value, int *to_return) { *to_return = value + 10; }
 
 int main() {
@@ -156,14 +160,25 @@ int main() {
   sleep(0);
   // NumericVariant *constt = new NumericVariant{float{20}};
   int constt = 10;
-  int consta = 1313;
+  int consta = 20;
   Job<NumericVariant> task2{&subtract, &constt, &consta};
   std::future<NumericVariant> test = task2.GetFuture();
   newZeta.SubmitTask(std::move(task2));
-  auto anoda = newZeta.SubmitTask(&subtract, &constt, &consta);
-  test.wait();
+  auto anoda = newZeta.SubmitTask(&multiply, &constt, &consta);
+  auto result = newZeta.SubmitTask(&divide, &consta, &constt);
+  auto result2 = newZeta.SubmitTask(&add, &consta, &constt);
+  auto result3 = newZeta.SubmitTask(&add, &consta, &constt);
+  auto result4 = newZeta.SubmitTask(&sin, &consta);
+  float x = 20;
+  auto result5 = newZeta.SubmitTask(&sin, &x);
+  result3.wait();
   std::cout << std::get<int>(test.get()) << '\n';
-
+  std::cout << std::get<int>(anoda.get()) << '\n';
+  std::cout << std::get<int>(result.get()) << '\n';
+  std::cout << std::get<int>(result2.get()) << '\n';
+  std::cout << std::get<int>(result3.get()) << '\n';
+  std::cout << std::get<int>(result4.get()) << '\n';
+  std::cout << std::get<float>(result5.get()) << '\n';
   while (true) {
     if (newZeta.Busy()) {
       std::cout << "Still Busy!" << '\n';
