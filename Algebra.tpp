@@ -7,7 +7,7 @@
 #ifndef ALGEBRA_TPP
 #define ALGEBRA_TPP
 
-template <Numeric Type> Type sum(const Type *a, const Type *b) {
+template <Numeric Type> Type add(const Type *a, const Type *b) {
   Type out;
   // Py_BEGIN_ALLOW_THREADS
   out = *a + *b;
@@ -160,16 +160,25 @@ template <Numeric T> T base10_log(const T *val) {
   return std::log10(*val);
 }
 
-template <Numeric Type> Type multiply_n(Type *data, int size_of) {
+template <Numeric Type> Type multiply_n(Type *data[], Type *size_of) {
   int out{1};
-  // Py_BEGIN_ALLOW_THREADS
-  for (int i = 0; i != size_of; ++i)
+  int _size_of;
+  if constexpr (is_numerc_variant<Type>::value) {
+    try {
+      int _size_of{std::get<float>(*size_of)}; // down cast
+    } catch (const std::bad_variant_access &ex) {
+      int _size_of{std::get<int>(*size_of)};
+    }
+  } else {
+    int _size_of{*size_of};
+  }
+
+  for (int i = 0; i != _size_of; ++i)
     out *= data[i];
-  // Py_END_ALLOW_THREADS
   return out;
 }
 
-template <Numeric T> T sum_n(T *data[], T *size_of) { // Pass by reference an array of ints that has unbound size.
+template <Numeric T> T sum_n(T data[], const T *size_of) { // Pass by reference an array of ints that has unbound size.
   // TODO: Implement multithreading to sum.
   T out{0};
   int size;
