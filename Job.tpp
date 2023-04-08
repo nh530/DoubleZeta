@@ -90,10 +90,29 @@ template <int_or_float T> Job<NumericVariant>::Job(T (*func_ptr)(const T, const 
 Job<NumericVariant>::Job(Job<float> other) {
   // TODO: Access the private function pointer.
 }
-Job<NumericVariant>::Job(Job<NumericVariant> &&other)
-    : _args2{new NumericVariant{*other._args2}}, _func_ptr{std::move(other._func_ptr)}, _func_ptr_no_args{std::move(other._func_ptr_no_args)},
-      _func_ptr_2_args{std::move(other._func_ptr_2_args)} {
-  _args = new NumericVariant{*other._args};
+Job<NumericVariant>::Job(Job<NumericVariant> &&other) {
+  // TODO: The problem is probably trying to copy or create a new null pointer for when arg2 is null.
+  if (other._args != NULL)
+		_args = new NumericVariant{*other._args};
+	else
+		_args = NULL;
+	if (other._args2 != NULL)
+		_args2 = new NumericVariant{*other._args2};
+	else
+		_args2 = NULL;
+	if (other._func_ptr != NULL)
+		_func_ptr = std::move(other._func_ptr);
+	else
+		_func_ptr = NULL;
+	if (other._func_ptr_no_args != NULL)
+		_func_ptr_no_args = std::move(other._func_ptr_no_args);
+	else
+		_func_ptr_no_args = NULL;
+	if (other._func_ptr_2_args != NULL)
+		_func_ptr_2_args = std::move(other._func_ptr_2_args);
+	else
+		_func_ptr_2_args = NULL;
+
   other._func_ptr = NULL;
   other._func_ptr_2_args = NULL;
   other._func_ptr_no_args = NULL;

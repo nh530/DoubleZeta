@@ -37,7 +37,6 @@ public:
   template <int_or_float T> Job(T (*func_ptr)(const T), T arg1);
   template <int_or_float T> Job(T (*func_ptr)(const T *, const T *), T *arg1, T *arg2);
   template <int_or_float T> Job(T (*func_ptr)(const T, const T), T arg1, T arg2);
-
   // Job(float (*func_ptr)());
   // Job(float (*func_ptr)(const float *), float *arg1);
   // Job(float (*func_ptr)(const float), float arg1);
