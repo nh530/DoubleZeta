@@ -6,8 +6,8 @@
  * parallel computing of many equations.
  */
 
-#include "Algebra.h"
-#include "DTypes.h"
+#include "algba_cmd/Algebra.h"
+#include "typing/DTypes.h"
 #include "Job.h"
 #include <any>
 #include <iostream>
@@ -170,7 +170,7 @@ int main() {
   auto result3 = newZeta.SubmitTask(&add, &consta, &constt);
   auto result4 = newZeta.SubmitTask(&sin, &consta);
   float x = 20;
-  auto result5 = newZeta.SubmitTask(&sin, &x);
+  auto result5 = newZeta.SubmitTask(&tan, &x);
   result3.wait();
   std::cout << std::get<int>(test.get()) << '\n';
   std::cout << std::get<int>(anoda.get()) << '\n';

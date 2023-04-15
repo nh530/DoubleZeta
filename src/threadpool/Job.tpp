@@ -1,4 +1,4 @@
-#include "DTypes.h"
+#include "typing/DTypes.h"
 #include <future>
 
 #ifndef JOB_TPP
@@ -6,6 +6,7 @@
 
 #include "Job.h"
 
+// TODO: Need to match general Job user type to the Job<NumericVariant> Version.
 template <Numeric T> Job<T>::Job(T (*func_ptr)(const T *), T *arg1) : _func_ptr{func_ptr}, _args{arg1}, _args2{NULL} {}
 template <Numeric T> Job<T>::Job(T (*func_ptr)()) : _func_ptr_no_args{func_ptr}, _args{NULL}, _args2{NULL} {}
 template <Numeric T> Job<T>::Job(T (*func_ptr)(const T *, const T *), T *arg1, T *arg2) : _func_ptr_2_args{func_ptr}, _args{arg1}, _args2{arg2} {}
@@ -91,7 +92,6 @@ Job<NumericVariant>::Job(Job<float> other) {
   // TODO: Access the private function pointer.
 }
 Job<NumericVariant>::Job(Job<NumericVariant> &&other) {
-  // TODO: The problem is probably trying to copy or create a new null pointer for when arg2 is null.
   if (other._args != NULL)
 		_args = new NumericVariant{*other._args};
 	else
@@ -133,7 +133,8 @@ Job<NumericVariant> &Job<NumericVariant>::operator=(Job<NumericVariant> &&other)
 }
 Job<NumericVariant>::~Job() {
   delete _args;
-  delete _args2;
+  delete _args2; 
+	// Don't need to release packaged_task pointers. Forgot why.
 }
 void Job<NumericVariant>::Run() {
   // Executes function and pass in arguments.
