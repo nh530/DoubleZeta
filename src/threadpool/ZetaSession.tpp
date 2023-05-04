@@ -6,33 +6,18 @@
  * parallel computing of many equations.
  */
 
-#include "algba_cmd/Algebra.h"
-#include "typing/DTypes.h"
 #include "Job.h"
-#include <any>
+#include "typing/DTypes.h"
+#include <future>
 #include <iostream>
 #include <queue>
 #include <thread>
-#include <unistd.h>
 #include <variant>
-#include <vector>
 
-class ThreadPool {
+#ifndef ZETASESSION_TPP
+#define ZETASESSION_TPP
 
-public:
-  void Start(int num_threads = -1);
-  void QueueJob(Job<NumericVariant> job);
-  void Stop();
-  bool Busy();
-
-private:
-  void ThreadLoop();
-  bool should_terminate = false;           // Tells threads to stop looking for jobs
-  std::mutex queue_mutex;                  // Prevents data races to the job queue; must aquire lock to interact with queue.
-  std::condition_variable mutex_condition; // Allows threads to wait on new jobs or termination
-  std::vector<std::thread> thread_pool;
-  std::queue<Job<NumericVariant>> jobs;
-};
+#include "threadpool/ZetaSession.h"
 
 void ThreadPool::ThreadLoop() {
   /*
@@ -103,26 +88,11 @@ void ThreadPool::Stop() {
   thread_pool.clear();
 }
 
-class ZetaSession {
-public:
-  ZetaSession(int thread_cnt) : num_threads{thread_cnt} {
-    pool.Start(thread_cnt); // Start thread pool
-  }
-  ~ZetaSession() { pool.Stop(); } // Releases resources
-  bool Busy();
-  std::future<NumericVariant> SubmitTask(NumericVariant (*func)());
-  void SubmitTask(Job<NumericVariant> task);
-  template <int_or_float T> std::future<NumericVariant> SubmitTask(T (*func)());
-  template <int_or_float T> std::future<NumericVariant> SubmitTask(T (*func)(const T *), T *arg1);
-  template <int_or_float T> std::future<NumericVariant> SubmitTask(T (*func)(const T *, const T *), T *arg1, T *arg2);
-  int Size() { return num_threads; }
-  void StartPool();
-  void ShutdownPool();
+ZetaSession::ZetaSession(int thread_cnt) : num_threads{thread_cnt} {
+  pool.Start(thread_cnt); // Start thread pool
+}
 
-private:
-  int num_threads;
-  ThreadPool pool;
-};
+ZetaSession::~ZetaSession() { pool.Stop(); } // Releases resources
 
 std::future<NumericVariant> ZetaSession::SubmitTask(NumericVariant (*func)()) {
   Job<NumericVariant> task{func};
@@ -153,40 +123,6 @@ void ZetaSession::SubmitTask(Job<NumericVariant> task) { pool.QueueJob(std::move
 bool ZetaSession::Busy() { return pool.Busy(); }
 void ZetaSession::StartPool() { pool.Start(); }
 void ZetaSession::ShutdownPool() { pool.Stop(); }
-void some_task(int value, int *to_return) { *to_return = value + 10; }
+int ZetaSession::Size() { return num_threads; }
 
-int main() {
-  ZetaSession newZeta{10};
-  sleep(0);
-  // NumericVariant *constt = new NumericVariant{float{20}};
-  int constt = 10;
-  int consta = 20;
-  Job<NumericVariant> task2{&subtract, &constt, &consta};
-  std::future<NumericVariant> test = task2.GetFuture();
-  newZeta.SubmitTask(std::move(task2));
-  auto anoda = newZeta.SubmitTask(&multiply, &constt, &consta);
-  auto result = newZeta.SubmitTask(&divide, &consta, &constt);
-  auto result2 = newZeta.SubmitTask(&add, &consta, &constt);
-  auto result3 = newZeta.SubmitTask(&add, &consta, &constt);
-  auto result4 = newZeta.SubmitTask(&sin, &consta);
-  float x = 20;
-  auto result5 = newZeta.SubmitTask(&tan, &x);
-  result3.wait();
-  std::cout << std::get<int>(test.get()) << '\n';
-  std::cout << std::get<int>(anoda.get()) << '\n';
-  std::cout << std::get<int>(result.get()) << '\n';
-  std::cout << std::get<int>(result2.get()) << '\n';
-  std::cout << std::get<int>(result3.get()) << '\n';
-  std::cout << std::get<int>(result4.get()) << '\n';
-  std::cout << std::get<float>(result5.get()) << '\n';
-  while (true) {
-    if (newZeta.Busy()) {
-      std::cout << "Still Busy!" << '\n';
-      continue;
-    } else {
-      break;
-    }
-  }
-  newZeta.ShutdownPool();
-  return 0;
-}
+#endif
