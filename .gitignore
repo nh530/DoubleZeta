@@ -31,5 +31,5 @@
 *.app
 
 # Directories to ignore
-build
-libs/gtest
+build/*
+libs/*
