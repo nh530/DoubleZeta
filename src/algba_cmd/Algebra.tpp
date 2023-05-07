@@ -1,5 +1,4 @@
 #include "typing/DTypes.h"
-#include <Python.h>
 #include <cmath>
 #include <iostream>
 #include <type_traits>
