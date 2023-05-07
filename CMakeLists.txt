@@ -1,3 +1,4 @@
+# DoubleZeta top most Build and Testing steps.
 cmake_minimum_required(VERSION 3.14)
 project(DoubleZeta VERSION 1.0 LANGUAGES CXX) # Sets the DoubleZeta_VERSION_MAJOR variable.
 
@@ -30,11 +31,13 @@ FetchContent_MakeAvailable(googletest)
 
 ########################################  Build step  ############################################################################
 
-add_executable(main.o ./run.cpp)
-add_subdirectory(src)
+add_subdirectory(src) # This target is created by a CMakeList.txt in src directory.
+add_executable(main.o run.cpp)
 target_link_libraries(main.o PUBLIC src)
-target_include_directories(main.o PUBLIC ${PROJECT_SOURCE_DIR}/src)
+#target_include_directories(main.o PUBLIC ${PROJECT_SOURCE_DIR}/src)
 
+add_executable(zeta.o examples/ZetaSession.test.cpp)
+target_link_libraries(zeta.o PUBLIC src)
 
 
 ################################################ Unit step ######################################################################
