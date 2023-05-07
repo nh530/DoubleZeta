@@ -1,5 +1,6 @@
 # DoubleZeta top most Build and Testing steps.
 cmake_minimum_required(VERSION 3.14)
+set(CXX clang++) # Specify compiler.
 project(DoubleZeta VERSION 1.0 LANGUAGES CXX) # Sets the DoubleZeta_VERSION_MAJOR variable.
 
 # Define variables.
@@ -28,12 +29,13 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 
+include(GoogleTest)
 
 ########################################  Build step  ############################################################################
 
 add_subdirectory(src) # This target is created by a CMakeList.txt in src directory.
-add_executable(main.o run.cpp)
-target_link_libraries(main.o PUBLIC src)
+#add_executable(main.o run.cpp)
+#target_link_libraries(main.o PUBLIC src)
 #target_include_directories(main.o PUBLIC ${PROJECT_SOURCE_DIR}/src)
 
 add_executable(zeta.o examples/ZetaSession.test.cpp)
@@ -42,11 +44,13 @@ target_link_libraries(zeta.o PUBLIC src)
 
 ################################################ Unit step ######################################################################
 # Now simply link against gtest or gtest_main as needed. Eg
-add_executable(test_run ./tests/temp.test.cpp)
-target_link_libraries(test_run GTest::gtest_main)
+add_executable(test_run 
+	./tests/temp.test.cpp
+	./tests/Linear.test.cpp
+)
+target_link_libraries(test_run GTest::gtest_main src)
 
 enable_testing()
-include(GoogleTest)
 gtest_discover_tests(test_run)
 
 

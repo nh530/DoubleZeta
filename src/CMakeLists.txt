@@ -9,7 +9,6 @@ set(ALGEBRA_DIR "./algba_cmd")
 add_library(
 	src 
 	SHARED 
-	${THREADPOOL_DIR}/temp.tpp
 	${TYPING_DIR}/DTypes.h
 	${THREADPOOL_DIR}/Job.tpp
 	${THREADPOOL_DIR}/ZetaSession.tpp
