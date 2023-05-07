@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(DoubleZeta VERSION 1.0) # Sets the DoubleZeta_VERSION_MAJOR variable.
+project(DoubleZeta VERSION 1.0 LANGUAGES CXX) # Sets the DoubleZeta_VERSION_MAJOR variable.
 
 # Define variables.
 set(CMAKE_CXX_STANDARD 20) # C++20
@@ -30,16 +30,17 @@ FetchContent_MakeAvailable(googletest)
 
 ########################################  Build step  ############################################################################
 
-# Now simply link against gtest or gtest_main as needed. Eg
-add_executable(test_run ./tests/temp.test.cpp)
-target_link_libraries(test_run GTest::gtest_main)
-
-# Directories to include when building the target executable.
-#target_include_directories(test_run PUBLIC ${PROJECT_BINARY_DIR})
+add_executable(main.o ./run.cpp)
+add_subdirectory(src)
+target_link_libraries(main.o PUBLIC src)
+target_include_directories(main.o PUBLIC ${PROJECT_SOURCE_DIR}/src)
 
 
 
 ################################################ Unit step ######################################################################
+# Now simply link against gtest or gtest_main as needed. Eg
+add_executable(test_run ./tests/temp.test.cpp)
+target_link_libraries(test_run GTest::gtest_main)
 
 enable_testing()
 include(GoogleTest)
