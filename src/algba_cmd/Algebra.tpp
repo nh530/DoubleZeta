@@ -6,6 +6,8 @@
 #ifndef ALGEBRA_TPP
 #define ALGEBRA_TPP
 
+#include "Algebra.h"
+
 template <Numeric Type> Type add(const Type *a, const Type *b) {
   Type out;
   // Py_BEGIN_ALLOW_THREADS
