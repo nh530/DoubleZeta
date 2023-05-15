@@ -38,8 +38,12 @@ add_subdirectory(src) # This target is created by a CMakeList.txt in src directo
 #target_link_libraries(main.o PUBLIC src)
 #target_include_directories(main.o PUBLIC ${PROJECT_SOURCE_DIR}/src)
 
-add_executable(zeta.o examples/ZetaSession.test.cpp)
+# End user executables that utilizes our package.
+set(EXECUTABLES "${CMAKE_CURRENT_SOURCE_DIR}/examples")
+add_executable(zeta.o ${EXECUTABLES}/ZetaSession.test.cpp)
+add_executable(main.o ${EXECUTABLES}/main.cpp)
 target_link_libraries(zeta.o PUBLIC src)
+target_link_libraries(main.o PUBLIC src)
 
 
 ################################################ Unit step ######################################################################
@@ -47,6 +51,7 @@ target_link_libraries(zeta.o PUBLIC src)
 add_executable(test_run 
 	./tests/temp.test.cpp
 	./tests/Linear.test.cpp
+	./tests/matrix.test.cpp
 )
 target_link_libraries(test_run GTest::gtest_main src)
 
