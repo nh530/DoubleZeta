@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <vector>
 /* Notes:
+ * TODO: Not fully tested
  * Use EXPECT_FLOAT_EQ or EXPECT_NEAR assertion when testing the any math operation that is done on floats, for example addition or multiplication,
  * as there is rounding error that occurs.
  *
@@ -126,6 +127,8 @@ TEST(MatrixTest, operator_sub) {
 }
 
 TEST(MatrixTest, operator_multi) {
+	// TODO: There was an error in the Matrix multi operator that was not captured by the current set of tests.
+	// The reason was that the matrix are the same size. Need to add tests for matrices that are not squares.
   Matrix left1 = Matrix(4, 4);
   Matrix right1 = Matrix(4, 4);
   for (int i = 0; i < 4; i++) {
@@ -183,8 +186,6 @@ TEST(MatrixTest, operator_transpose) {
   actual[3][0] = 2.1f;
   actual[2][1] = 5.3f;
 	Matrix obs = left1.transpose();
-	std::cout << left1[0][0] << '\n';
-	std::cout << left1[1][2] << '\n';
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
       EXPECT_FLOAT_EQ(obs[i][j], actual[i][j]);
