@@ -1,12 +1,15 @@
 #include "Matrix.h"
+#include <iostream>
 float _vector_dotproduct(std::vector<float> left, std::vector<float> right) {
   /* Computes the dot product of two vectors that are the same size.
    *
    *
    */
-  if (left.size() != right.size())
+  if (left.size() != right.size()) {
+    std::cout << "The size of the left vector is: " << left.size() << '\n';
+    std::cout << "The size of the right vector is: " << right.size() << '\n';
     throw std::invalid_argument("The two vectors must be same size!");
-
+  }
   int l_ele = left.size();
   float out;
   for (int i = 0; i < l_ele; i++) {
@@ -15,7 +18,7 @@ float _vector_dotproduct(std::vector<float> left, std::vector<float> right) {
 
   return out;
 }
-Matrix::Matrix(int rows, int cols, float def_val) : _rows{rows}, _cols{cols}, _def_val{def_val} {
+Matrix::Matrix(int rows, int cols, float def_val) : _rows{rows}, _cols{cols} {
   // Defaults value implicit from header file.
   // # TODO: throw error if pass 0 rows 0 cols.
   shape[0] = _rows;
@@ -28,9 +31,9 @@ Matrix::Matrix(int rows, int cols, float def_val) : _rows{rows}, _cols{cols}, _d
     _container.push_back(temp); // Initialize vectors of numbers represented by def_val
   }
 }
-Matrix::Matrix(float **array, int rows, int cols) { // Pass by reference to 2-d array
+Matrix::Matrix(float **array, int rows, int cols) : _rows{rows}, _cols{cols} { // Pass by reference to 2-d array
   for (int i = 0; i < rows; i++) {
-    _container.push_back(new float[_cols]{0});
+    _container.push_back(new float[cols]{0});
     for (int j = 0; j < cols; j++) {
       _container[i][j] = array[i][j];
     }
@@ -180,7 +183,7 @@ Matrix operator*(const Matrix &a, const Matrix &b) {
 
   for (int i = 0; i < l_rows; i++) {
     for (int j = 0; j < r_cols; j++) {
-      out[i][j] = _vector_dotproduct(std::vector<float>(a[i], a[i] + a.shape[0]), b.getColumn(j));
+      out[i][j] = _vector_dotproduct(std::vector<float>(a[i], a[i] + a.shape[1]), b.getColumn(j));
     }
   }
 
