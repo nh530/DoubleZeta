@@ -1,20 +1,10 @@
-#ifndef LINEAR_H
-#define LINEAR_H
-
+#include "optimizer/GradientDescent.h"
 #include "typing/DTypes.h"
 #include "typing/Matrix.h"
 
-// TODO: Is there a modifiable hashmap in cpp?
-struct params {};
-
-class TempModel {
-public:
-  virtual params get_params() = 0;
-  virtual void _validate_data() = 0;
-  virtual float get_score() = 0;
-  virtual void fit() = 0;
-  virtual float predict(Matrix &) = 0;
-};
+#ifndef LINEAR_H
+#define LINEAR_H
+// deprecated
 
 class LinearModel {
   Matrix _A;

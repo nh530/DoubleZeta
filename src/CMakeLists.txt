@@ -21,6 +21,7 @@ set(
 set(
 	REGRESSION_FILES 
 	${REGRESSION_DIR}/Linear.cpp
+	${REGRESSION_DIR}/Regression.cpp
 )
 set(
 	ALGEBRA_FILES 

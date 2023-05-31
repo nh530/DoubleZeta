@@ -1,4 +1,5 @@
 #include "optimizer/GradientDescent.h"
+#include "regression/Regression.h"
 #include "typing/Matrix.h"
 #include <iostream>
 
