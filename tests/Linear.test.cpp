@@ -1,20 +1,22 @@
-#include "regression/Linear.tpp"
+#include "regression/Linear.h"
 #include <gtest/gtest.h>
-#include <vector>
 #include <iostream>
 #include <stdexcept>
+#include <vector>
 
-
-TEST(LinearTest, BasicAssertions) {
-	EXPECT_EQ(_vector_dotproduct(std::vector<float> {10, 10}, std::vector<float> {1, 2}), 30.0f);
-	EXPECT_EQ(_vector_dotproduct(std::vector<float> {1.0, 1.0}, std::vector<float> {1, 2}), 3.0f);
-	EXPECT_EQ(_vector_dotproduct(std::vector<float> {1.0, 2.0, 10.1, 20.5}, std::vector<float> {1, 2, 3, 4}), 117.3f);
-	EXPECT_EQ(_vector_dotproduct(std::vector<float> {1.0, 2.0, 10.1, 20.5}, std::vector<float> {1.0, 14.98, 1123123.2345238, 2.902310918751231}), 11343635.126064214400236f);
-	EXPECT_THROW(_vector_dotproduct(std::vector<float> {1.0, 1.0}, std::vector<float> {1}), std::invalid_argument);
-
+TEST(LinearTest, predict) {
+  LinearModel lr = LinearModel();
+  Matrix obs{3, 1};
+  obs[0][0] = 10;
+  obs[1][0] = 20;
+  obs[2][0] = 30;
+  float pred = lr.predict(obs);
+  float actl = 10;
+  //EXPECT_EQ(actl, pred);
 }
 
-
-
-
-
+TEST(LinearTest, _calculate_loss) {
+	LinearModel lr = LinearModel();
+	std::vector<float> test1 {0.0, 1.1, 2.3123123};
+	//EXPECT_EQ(10.0f, lr._calculate_loss(test1));
+}

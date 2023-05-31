@@ -5,14 +5,13 @@
 #define MATRIX_H
 /* TODO: It looks like the Matrix user defined type does not work when passing into a function normally.
  * It works when passing by reference.
- *
+ * Multithread this Matrix object will make gradient descent multithreaded.
  *
  * */
 class Matrix {
   std::vector<float *> _container;
   int _rows;
   int _cols;
-	float _def_val;
 
 public:
   int shape[2];

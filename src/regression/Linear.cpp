@@ -13,7 +13,7 @@ float **array__init__() {
   }
   return out;
 }
-LinearRegression::LinearRegression(float step_size, float tolerance) : _step_size{step_size}, _tolerance{tolerance} {
+LinearModel::LinearModel(float step_size, float tolerance) : _step_size{step_size}, _tolerance{tolerance} {
   // Initailize constants
   _b = Matrix(3, 1, 1.0f);
   _b[0][0] = -1;
@@ -22,17 +22,17 @@ LinearRegression::LinearRegression(float step_size, float tolerance) : _step_siz
   float **nums = array__init__();
   _A = Matrix(nums, 3, 3);
 };
-float LinearRegression::predict(Matrix &x) {
+float LinearModel::predict(Matrix &x) {
   float out;
   Matrix inter = std::move(0.5f * _A * x);
   out = ((inter - _b).transpose() * (inter - _b))[0][0];
   return out;
 }
-float LinearRegression::_calculate_loss(Matrix &curr_val) { return predict(curr_val); }
+float LinearModel::_calculate_loss(Matrix &curr_val) { return predict(curr_val); }
 
-float LinearRegression::_calculate_gradient(Matrix &x) { return ((_A.transpose() * _A * x) - (_A.transpose() * _b))[0][0]; }
+float LinearModel::_calculate_gradient(Matrix &x) { return ((_A.transpose() * _A * x) - (_A.transpose() * _b))[0][0]; }
 
-Matrix LinearRegression::_optimize_loss() {
+Matrix LinearModel::_optimize_loss() {
   // Starting point for optimization.
   Matrix x{3, 1, 10.0f};
   // Gradient of linear function

@@ -42,8 +42,10 @@ add_subdirectory(src) # This target is created by a CMakeList.txt in src directo
 set(EXECUTABLES "${CMAKE_CURRENT_SOURCE_DIR}/examples")
 add_executable(zeta.o ${EXECUTABLES}/ZetaSession.test.cpp)
 add_executable(main.o ${EXECUTABLES}/main.cpp)
+add_executable(optimization.o ${EXECUTABLES}/optimization.cpp)
 target_link_libraries(zeta.o PUBLIC src)
 target_link_libraries(main.o PUBLIC src)
+target_link_libraries(optimization.o PUBLIC src)
 
 
 ################################################ Unit step ######################################################################

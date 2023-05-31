@@ -19,4 +19,14 @@ concept int_or_float = is_float<T>() || is_int<T>();
 template <typename T>
 concept Numeric = is_float<T>() || is_int<T>() || is_numerc_variant<T>::value;
 
+class MeanSquaredError;
+class BinaryCrossEntropy;
+// Defining what it means be a loss function user defined type.
+template<typename T> struct is_loss_function : public std::false_type {};
+template <> struct is_loss_function<MeanSquaredError> : public std::true_type {};
+template <> struct is_loss_function<BinaryCrossEntropy> : public std::true_type {};
+
+template <typename T>
+concept LossFunction = is_loss_function<T>::value;
+
 #endif

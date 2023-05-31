@@ -1,14 +1,14 @@
+#include "optimizer/GradientDescent.h"
 #include "regression/Linear.h"
 #include "threadpool/ZetaSession.h"
 #include <iostream>
 
 int main() {
-  LinearRegression lr = LinearRegression();
+  LinearModel lr = LinearModel();
   Matrix obs{3, 1, 1};
   obs[0][0] = 10;
   obs[1][0] = 20;
   obs[2][0] = 30;
-
   Matrix left1 = Matrix(4, 4, 1);
   Matrix right1 = Matrix(4, 4, 1);
   right1[0][0] = 0.43f;
@@ -22,7 +22,7 @@ int main() {
   Matrix out = lr._optimize_loss();
   for (int i = 0; i < out.shape[0]; i++) {
     for (int j = 0; j < out.shape[1]; j++) {
-			std::cout << out[i][j] << '\n';
+      std::cout << out[i][j] << '\n';
     }
   }
 }

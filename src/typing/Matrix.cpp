@@ -28,12 +28,13 @@ Matrix::Matrix(int rows, int cols, float def_val) : _rows{rows}, _cols{cols} {
     for (int j = 0; j < _cols; j++) {
       temp[j] = def_val;
     }
-    _container.push_back(temp); // Initialize vectors of numbers represented by def_val
+    _container.push_back(std::move(temp)); // Initialize vectors of numbers represented by def_val
   }
 }
 Matrix::Matrix(float **array, int rows, int cols) : _rows{rows}, _cols{cols} { // Pass by reference to 2-d array
   for (int i = 0; i < rows; i++) {
-    _container.push_back(new float[cols]{0});
+    float *temp = new float[cols]{0};
+    _container.push_back(temp);
     for (int j = 0; j < cols; j++) {
       _container[i][j] = array[i][j];
     }
@@ -49,6 +50,8 @@ Matrix::Matrix(const Matrix &other) {
   shape[0] = _rows;
   shape[1] = _cols;
   for (int i = 0; i < _rows; i++) {
+    float *temp = new float[_cols]{0};
+    _container.push_back(temp);
     for (int j = 0; j < _cols; j++) {
       _container[i][j] = other[i][j];
     }
