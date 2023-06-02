@@ -43,7 +43,6 @@ Matrix GradientDescent::optimize(std::function<Matrix(Matrix &, Matrix &, Matrix
         gradient[i][0] = gradient[i][0] - (3 * gradient[i][0] / 4);
       }
     }
-    std::cout << "Weights: " << weights[0][0] << '\n';
     weights = weights - (_step * gradient);
     gradient = gradient_fn(weights, x, y); // calculate gradient with new x.
   }

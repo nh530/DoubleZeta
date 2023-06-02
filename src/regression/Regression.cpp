@@ -36,13 +36,15 @@ float LinearRegression::get_intercept() { return _A[0][_A.shape[1]]; }
 std::vector<float> LinearRegression::get_parameters() {
   if (!_fit_flag)
     throw InvalidModel("The model has not yet been fit!");
-  return std::vector<float>{*_A[0]};
+	float *temp = _A.transpose()[0]; // Pointer to existing object. Nothing new being created.
+  return std::vector<float>{temp, temp + (_A.transpose().shape[1])};
 }
 
 void LinearRegression::print() {
-  for (int j = 0; j < _A.shape[1]; j++) {
-    std::cout << "coef " << j << ":" << _A[0][j] << '\t';
+  for (int i = 0; i < _A.shape[0]; i++) {
+    std::cout << "coef_" << i << ": " << _A[i][0] << '\t';
   }
+	std::cout << '\n';
 }
 
 void LinearRegression::_verify_model(Matrix &x, Matrix &y) {
@@ -53,7 +55,8 @@ void LinearRegression::_verify_model(Matrix &x, Matrix &y) {
 
 Matrix LinearRegression::_prep_train_data(Matrix &x) {
   // Add a column of 1's to the right most side of the matrix. This represents the intercept.
-  Matrix out{x.shape[0], x.shape[1] + 1, 1.0f};
+  Matrix out{x.shape[0], x.shape[1] + 1, 1.0};
+
   if (_fit_intercept) {
     for (int i = 0; i < x.shape[0]; i++) {
       for (int j = 0; j < x.shape[1]; j++) {
