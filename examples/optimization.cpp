@@ -26,4 +26,9 @@ int main() {
   y_obs[2][0] = 32;
   LinearRegression model = LinearRegression(.00011, 1.0, false);
   model.fit(obs, y_obs);
+  std::cout << model.get_parameters()[0] << '\t' << model.get_parameters()[1] << '\n';
+
+  LinearRegression model2 = LinearRegression(.00011, .001, true);
+  model2.fit(obs, y_obs);
+	model2.print();
 }

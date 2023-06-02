@@ -54,6 +54,7 @@ add_executable(test_run
 	./tests/temp.test.cpp
 	./tests/Linear.test.cpp
 	./tests/matrix.test.cpp
+	./tests/integration/LinearRegression.test.cpp
 )
 target_link_libraries(test_run GTest::gtest_main src)
 
