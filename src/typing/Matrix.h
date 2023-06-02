@@ -28,7 +28,7 @@ public:
   Matrix operator-=(const Matrix);
   Matrix transpose();
   const std::vector<float> getColumn(int j) const;
-	// Add a print function.
+	void print();
 };
 
 Matrix operator+(const Matrix &, const Matrix &);

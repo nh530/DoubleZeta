@@ -277,3 +277,13 @@ Matrix Matrix::transpose() {
   }
   return out;
 }
+
+void Matrix::print() {
+  for (int i = 0; i < _rows; i++) {
+    std::cout << '\n' << "___________" << '\n' << "| ";
+    for (int j = 0; j < _cols; j++) {
+      std::cout << (*this)[i][j] << " | ";
+    }
+  }
+  std::cout << '\n' << "___________" << '\n';
+}
