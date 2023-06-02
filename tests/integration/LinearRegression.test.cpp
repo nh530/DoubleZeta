@@ -17,6 +17,12 @@ TEST(LinearRegressionTest, coefficients) {
   y_obs[2][0] = 32;
   LinearRegression model = LinearRegression(.00011, 1.0, false);
   model.fit(obs, y_obs);
-	EXPECT_NEAR(model.get_parameters()[0], 1.12f, .01);
-	EXPECT_FLOAT_EQ(model.get_parameters()[1], 0.0f);
+  EXPECT_NEAR(model.get_parameters()[0], 1.12f, .01);
+  EXPECT_FLOAT_EQ(model.get_parameters()[1], 0.0f);
+
+  LinearRegression model2 = LinearRegression(.00011, .001, true); // If the tolerance is not low enough, the coefficients do not converge to true values
+  model2.fit(obs, y_obs);
+  model2.print();
+	EXPECT_NEAR(model2.get_parameters()[0], 1.05, .01);
+	EXPECT_NEAR(model2.get_parameters()[1], 1.66, .01);
 }
