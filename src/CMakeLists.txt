@@ -44,3 +44,4 @@ add_library(
 set_target_properties(src PROPERTIES LINKER_LANGUAGE CXX) # cmake cannot determine the language, so explicitly state cpp.
 target_include_directories(src INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}) # CMAKE_CURRENT_SOURCE_DIR is the directory of the CMakeListFile.txt.
 target_include_directories(src PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}) # This is needed for internal linkage.
+target_link_libraries(src GTest::gtest_main)

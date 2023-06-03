@@ -26,12 +26,17 @@ Matrix GradientDescent::_set_initial(int rows, int cols, int seed) {
   return out;
 };
 
-Matrix GradientDescent::optimize(std::function<Matrix(Matrix &, Matrix &, Matrix &)> gradient_fn, Matrix &x, Matrix &y) {
+Matrix GradientDescent::optimize(std::function<Matrix(Matrix &, Matrix &, Matrix &)> gradient_fn, Matrix &x, Matrix &y, const Matrix &init_weights) {
   /*
    * Gradient function with respect to the input weights vector x.
-   *
+   * A 1 by 1 matrix of 0 is used as the sentinel value to signal the algorithm to generate its own initial weight.
+	 *
    * */
-  Matrix weights = _set_initial(x.shape[1], 1);
+	Matrix weights{x.shape[1], 1}; //  temporary initialization; TODO: Implement copy initialization.
+	if (init_weights == Matrix{1,1,0})
+		weights = _set_initial(x.shape[1], 1);
+	else
+		weights = init_weights;
   Matrix gradient = gradient_fn(weights, x, y);
   float stable_c = 0.0000001; // Stabilizing constant against numerical underflow.
   while (sqrt((gradient.transpose() * gradient)[0][0]) + stable_c > _tol) {
@@ -58,7 +63,7 @@ float MeanSquaredError::objective_func(std::vector<float> &y_pred, std::vector<f
   if (y_pred.size() != y_act.size())
     throw std::invalid_argument("The size of the vectors do not match!");
 
-  float out;
+  float out = 0;                     // Will get undefined behavior in output if don't initialize.
   unsigned int size = y_pred.size(); // Number of elements
   for (unsigned int i = 0; i < size; i++) {
     out += pow(y_pred[i] - y_act[i], 2);
@@ -71,22 +76,22 @@ float MeanSquaredError::objective_func(Matrix &y_pred, Matrix &y_act) {
    * MSE = $1/n * \sum_{i=1}^{n} (y_pred - y_act)^{2}$
    *
    * */
-  if (y_pred.shape[0] != y_act.shape[0] & y_pred.shape[1] != y_act.shape[1])
+  if (y_pred.shape[0] != y_act.shape[0] || y_pred.shape[1] != y_act.shape[1])
     throw std::invalid_argument("The size of the Matrices do not match!");
-  if (y_pred.shape[0] != 1 || y_pred.shape[1] != 1)
+  if (!(y_pred.shape[0] != 1) && (y_pred.shape[1] == 1) && !(y_pred.shape[0] == 1) && (y_pred.shape[1] != 1))
     throw std::invalid_argument("The y_pred Matrix is not a vector! i.e. length of row or length of column is not 1.");
-  if (y_act.shape[0] != 1 || y_act.shape[1] != 1)
+  if (!(y_act.shape[0] != 1) && (y_act.shape[1] == 1) && !(y_act.shape[0] == 1) && (y_act.shape[1] != 1))
     throw std::invalid_argument("The y_act Matrix is not a vector! i.e. length of row or length of column is not 1.");
 
-  float out;
+  float out = 0;
   unsigned int size;
   if (y_pred.shape[0] > 1) {
-    unsigned int size = y_pred.shape[0]; // Number of elements
+    size = y_pred.shape[0]; // Number of elements
     for (unsigned int i = 0; i < size; i++) {
       out += pow(y_pred[i][0] - y_act[i][0], 2);
     }
   } else if (y_pred.shape[1] > 1) {
-    unsigned int size = y_pred.shape[1];
+    size = y_pred.shape[1];
     for (unsigned int i = 0; i < size; i++) {
       out += pow(y_pred[0][i] - y_act[0][i], 2);
     }
