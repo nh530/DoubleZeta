@@ -376,8 +376,8 @@ inline dbl_wrd operator/(const dbl_wrd &a, double b) {
 
   /* renormalize */
   double temp;
-  r.set_hi(dbl_wrd::_fast_two_sum(q1, q2, temp));
-  r.set_lo(temp);
+  r.x[0] = dbl_wrd::_fast_two_sum(q1, q2, temp);
+  r.x[1] = temp;
   return r;
 }
 
@@ -911,3 +911,5 @@ dbl_wrd ddrand(double l_bound, double u_bound) {
   dbl_wrd out = unif(re) + unif(re);
   return out;
 }
+
+const int dbl_wrd::get_digits() { return _digits; }

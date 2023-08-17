@@ -34,8 +34,6 @@ public:
     x[1] = d[1];
   }
   double hi() const { return x[0]; }
-  void set_hi(double a);
-  void set_lo(double a);
   double lo() const { return x[1]; }
   bool isnan() const { return ISNAN(x[0]) || ISNAN(x[1]); }
   bool isfinite() const { return ISFINITE(x[0]); }
@@ -71,7 +69,6 @@ public:
   static const double _eps;
   static const double _min_normalized;
   static const dbl_wrd _max;
-  static const int _digits;
   static dbl_wrd accurate_add(const dbl_wrd &a, const dbl_wrd &b);
   static dbl_wrd sloppy_add(const dbl_wrd &a, const dbl_wrd &b);
   static dbl_wrd imp_mul(const dbl_wrd &a, double b);
@@ -96,6 +93,7 @@ private:
   static double _aint(double d);
   static double _square(double t);
   static int _to_int(double a);
+  static const int _digits;
   friend dbl_wrd operator+(const dbl_wrd &a, double b);
   friend dbl_wrd operator+(double a, const dbl_wrd &b);
   friend dbl_wrd operator+(const dbl_wrd &a, const dbl_wrd &b);
