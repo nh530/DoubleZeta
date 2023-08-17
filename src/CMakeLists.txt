@@ -6,6 +6,8 @@ set(TYPING_DIR "${CMAKE_CURRENT_SOURCE_DIR}/typing")
 set(REGRESSION_DIR "${CMAKE_CURRENT_SOURCE_DIR}/regression")
 set(ALGEBRA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/algba_cmd")
 set(OPTIMIZER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/optimizer")
+set(CONFIG_DIR "${CMAKE_CURRENT_SOURCE_DIR}/config")
+set(DOUBLE_WORD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/double_word")
 
 set(
 	THREADPOOL_FILES 
@@ -31,6 +33,19 @@ set(
 	OPTIMIZER_FILES
 	${OPTIMIZER_DIR}/GradientDescent.cpp
 )
+set(
+	CONFIG_FILES
+	${CONFIG_DIR}/settings.h
+)
+set(
+	DOUBLE_WORD_FILES
+	${DOUBLE_WORD_DIR}/bsc_core.h
+	${DOUBLE_WORD_DIR}/dw.cpp
+	${DOUBLE_WORD_DIR}/dw_consts.cpp
+	${DOUBLE_WORD_DIR}/fpu_fix.cpp
+)
+
+
 
 add_library(
 	src 
@@ -40,6 +55,8 @@ add_library(
 	${REGRESSION_FILES}
 	${ALGEBRA_FILES}
 	${OPTIMIZER_FILES}
+	${CONFIG_FILES}
+	${DOUBLE_WORD_FILES}
 	) # cmake needs the library type to be specified as SHARED in order to build .tpp files.
 set_target_properties(src PROPERTIES LINKER_LANGUAGE CXX) # cmake cannot determine the language, so explicitly state cpp.
 target_include_directories(src INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}) # CMAKE_CURRENT_SOURCE_DIR is the directory of the CMakeListFile.txt.
