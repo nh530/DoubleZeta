@@ -49,9 +49,11 @@ dbl_wrd dbl_wrd::add(double a, double b) {
   return dbl_wrd(s, e);
 }
 
-inline dbl_wrd dbl_wrd::accurate_add(const dbl_wrd &a, const dbl_wrd &b) {
+dbl_wrd dbl_wrd::accurate_add(const dbl_wrd &a, const dbl_wrd &b) {
   /* double-double + double-double
    * This is more accurate than the sloppy_add routine and has no limitation on the signs, but is twice as slow.
+   * In more precise language, the upper bound on the error is better than that of sloppy_add. This does not mean
+   * that every calculation will be better than sloppy add. It is possible for sloppy_add to perform better in some instances.
    *
    * AccurateDWPlusDW
    * Joldes, Muller, and Popescu proved a relative error upper bound of:
@@ -59,7 +61,6 @@ inline dbl_wrd dbl_wrd::accurate_add(const dbl_wrd &a, const dbl_wrd &b) {
    * where p is the precision of double, which is 53.
    */
   double s1, s2, t1, t2;
-
   s1 = _two_sum(a.x[0], b.x[0], s2);
   t1 = _two_sum(a.x[1], b.x[1], t2);
   s2 += t1;
@@ -69,25 +70,28 @@ inline dbl_wrd dbl_wrd::accurate_add(const dbl_wrd &a, const dbl_wrd &b) {
   return dbl_wrd(s1, s2);
 }
 
-inline dbl_wrd dbl_wrd::sloppy_add(const dbl_wrd &a, const dbl_wrd &b) {
+dbl_wrd dbl_wrd::sloppy_add(const dbl_wrd &a, const dbl_wrd &b) {
   /* This is the less accurate version than accurate_add, but faster.
    * This routine should only be used when the signs on a and b are the same.
    *
-   * Dekker proved a relative error of $4u^2$ where u is $1/2 * ulp(1)$.
+   * Dekker proved a relative error of $(|a| + |b|)4u^2$ where u is $1/2 * ulp(1)$ assuming signs are same.
+   * u = 2^-p
    */
   double s, e;
   s = _two_sum(a.x[0], b.x[0], e);
-  e += (a.x[1] + b.x[1]);
+  e += a.x[1];
+  e += b.x[1];
   s = _fast_two_sum(s, e, e);
   return dbl_wrd(s, e);
 }
 
-inline dbl_wrd operator+(const dbl_wrd &a, double b) {
+dbl_wrd operator+(const dbl_wrd &a, double b) {
   /* double-double + double
    *
    * Joldes, Muller, and Popescu proved a relative error upper bound of:
    * $2 * u^2$,
    * where p is the precision of double, which is 53.
+   * u = 2^-p
    * */
   double s_h, s_l;
   s_h = dbl_wrd::_two_sum(a.x[0], b, s_l);
@@ -96,7 +100,7 @@ inline dbl_wrd operator+(const dbl_wrd &a, double b) {
   return dbl_wrd(s_h, s_l);
 }
 
-inline dbl_wrd operator+(const dbl_wrd &a, const dbl_wrd &b) {
+dbl_wrd operator+(const dbl_wrd &a, const dbl_wrd &b) {
 #ifndef ACCURATE_ADD
   return dbl_wrd::sloppy_add(a, b);
 #else
@@ -105,14 +109,14 @@ inline dbl_wrd operator+(const dbl_wrd &a, const dbl_wrd &b) {
 }
 
 /* double + double-double */
-inline dbl_wrd operator+(double a, const dbl_wrd &b) {
+dbl_wrd operator+(double a, const dbl_wrd &b) {
   // calls operator+(const dbl_wrd &a, double b)
   return (b + a);
 }
 
 /*********** Self-Additions ************/
 /* double-double += double */
-inline dbl_wrd &dbl_wrd::operator+=(double a) {
+dbl_wrd &dbl_wrd::operator+=(double a) {
   /* double-double + double
    * Joldes, Muller, and Popescu proved a relative error upper bound of:
    * $2 * u^2$,
@@ -121,54 +125,41 @@ inline dbl_wrd &dbl_wrd::operator+=(double a) {
    * Implementation is the same as dbl_wrd operator+(const dbl_wrd &a, double b) overload.
    * */
   double s1, s2;
-  s1 = basic_core::two_sum(x[0], a, s2);
+  s1 = _two_sum(x[0], a, s2);
   s2 += x[1];
-  x[0] = basic_core::fast_two_sum(s1, s2, x[1]);
+  x[0] = _fast_two_sum(s1, s2, x[1]);
   return *this;
 }
 
 /* double-double += double-double */
-inline dbl_wrd &dbl_wrd::operator+=(const dbl_wrd &a) {
+dbl_wrd &dbl_wrd::operator+=(const dbl_wrd &a) {
 #ifndef ACCURATE_ADD
   // sloppy_add
-  // double s, e;
-  // s = basic_core::two_sum(x[0], a.x[0], e);
-  // e += x[1];
-  // e += a.x[1];
-  // x[0] = basic_core::quick_two_sum(s, e, x[1]);
-  // TODO: This might not work.
   *this = dbl_wrd::sloppy_add(*this, a);
   return *this;
 #else
   // ieee_add
-  // double s1, s2, t1, t2;
-  // s1 = basic_core::two_sum(x[0], a.x[0], s2);
-  // t1 = basic_core::two_sum(x[1], a.x[1], t2);
-  // s2 += t1;
-  // s1 = basic_core::fast_two_sum(s1, s2, s2);
-  // s2 += t2;
-  // x[0] = basic_core::fast_two_sum(s1, s2, x[1]);
   *this = dbl_wrd::accurate_add(*this, a);
   return *this;
 #endif
 }
 
 /*********** Subtractions ************/
-inline dbl_wrd dbl_wrd::sub(double a, double b) {
+dbl_wrd dbl_wrd::sub(double a, double b) {
   /* double-double = double - double */
   double s, e;
   s = basic_core::two_diff(a, b, e);
   return dbl_wrd(s, e);
 }
 
-inline dbl_wrd operator-(const dbl_wrd &a, double b) {
+dbl_wrd operator-(const dbl_wrd &a, double b) {
   /* double-double - double
    * calls the dbl_wrd operator+(const dbl_wrd &a, double b) overload.
    * */
   return (a + -b);
 }
 
-inline dbl_wrd operator-(const dbl_wrd &a, const dbl_wrd &b) {
+dbl_wrd operator-(const dbl_wrd &a, const dbl_wrd &b) {
 /* double-double - double-double */
 #ifndef ACCURATE_ADD
   return dbl_wrd::sloppy_add(a, -b);
@@ -177,15 +168,15 @@ inline dbl_wrd operator-(const dbl_wrd &a, const dbl_wrd &b) {
 #endif
 }
 
-inline dbl_wrd operator-(double a, const dbl_wrd &b) {
+dbl_wrd operator-(double a, const dbl_wrd &b) {
   /* double - double-double
    * Calls the dbl_wrd operator-(const dbl_wrd &a, const dbl_wrd &b) overload.
    * */
-  return (b - a);
+  return (-b + a);
 }
 
 /*********** Self-Subtractions ************/
-inline dbl_wrd &dbl_wrd::operator-=(double a) {
+dbl_wrd &dbl_wrd::operator-=(double a) {
   /* double-double -= double
    * Calls the dbl_wrd operator+(const dbl_wrd &a, double b) overload.
    * */
@@ -193,7 +184,7 @@ inline dbl_wrd &dbl_wrd::operator-=(double a) {
   return *this;
 }
 
-inline dbl_wrd &dbl_wrd::operator-=(const dbl_wrd &a) {
+dbl_wrd &dbl_wrd::operator-=(const dbl_wrd &a) {
 /* double-double -= double-double */
 #ifndef ACCURATE_ADD
   *this = dbl_wrd::sloppy_add(*this, -a);
@@ -205,17 +196,17 @@ inline dbl_wrd &dbl_wrd::operator-=(const dbl_wrd &a) {
 }
 
 /*********** Unary Minus ***********/
-inline dbl_wrd dbl_wrd::operator-() const { return dbl_wrd(-x[0], -x[1]); }
+dbl_wrd dbl_wrd::operator-() const { return dbl_wrd(-x[0], -x[1]); }
 
 /*********** Multiplications ************/
-inline dbl_wrd dbl_wrd::mul(double a, double b) {
+dbl_wrd dbl_wrd::mul(double a, double b) {
   /* double-double = double * double */
   double p, e;
   p = basic_core::two_prod(a, b, e);
   return dbl_wrd(p, e);
 }
 
-inline dbl_wrd ldexp(const dbl_wrd &a, int exp) {
+dbl_wrd ldexp(const dbl_wrd &a, int exp) {
   /* Multiplies a double-double a by 2 to the power of exp.
    * double-double * (2.0 ^ exp)
    * Overload the std::ldexp function.
@@ -231,8 +222,8 @@ inline dbl_wrd ldexp(const dbl_wrd &a, int exp) {
   return dbl_wrd(std::ldexp(a.x[0], exp), std::ldexp(a.x[1], exp));
 }
 
-inline dbl_wrd mul_pwr2(const dbl_wrd &a, double b) {
-  /*
+dbl_wrd mul_pwr2(const dbl_wrd &a, double b) {
+  /* Assumes b is a power of 2.
    * double-double * double, where double is a power of 2.
    * If b is a power of 2, then you can just simply multiply straight away without a special
    * algorithm. It will return an exact result.
@@ -241,9 +232,9 @@ inline dbl_wrd mul_pwr2(const dbl_wrd &a, double b) {
   return dbl_wrd(a.x[0] * b, a.x[1] * b);
 }
 
-inline dbl_wrd operator*(const dbl_wrd &a, double b) { return dbl_wrd::imp_mul(a, b); }
+dbl_wrd operator*(const dbl_wrd &a, double b) { return dbl_wrd::imp_mul(a, b); }
 
-inline dbl_wrd dbl_wrd::mul(const dbl_wrd &a, double b) {
+dbl_wrd dbl_wrd::mul(const dbl_wrd &a, double b) {
   /* double-double * double
    * Relative error is upper bounded by $3*u^2$.
    *
@@ -258,7 +249,7 @@ inline dbl_wrd dbl_wrd::mul(const dbl_wrd &a, double b) {
   return dbl_wrd(p1, p2);
 }
 
-inline dbl_wrd dbl_wrd::imp_mul(const dbl_wrd &a, double b) {
+dbl_wrd dbl_wrd::imp_mul(const dbl_wrd &a, double b) {
   /* double-double * double
    * This routine is more accurate than the mul routine and is slightly faster.
    *
@@ -283,10 +274,11 @@ inline dbl_wrd dbl_wrd::imp_mul(const dbl_wrd &a, double b) {
   return dbl_wrd(p1, p2);
 }
 
-inline dbl_wrd dbl_wrd::mul(const dbl_wrd &a, const dbl_wrd &b) {
+dbl_wrd dbl_wrd::mul(const dbl_wrd &a, const dbl_wrd &b) {
   /* double-double * double-double
    *
-   * Relative error is upper bounded by $5^2$.
+   * Relative error is upper bounded by $5*u^{2} =
+   * 0.0000000000000000000000000000000616297582203915472977912941627176741932192527428924222476780414581298828125$.
    *
    * Reference:
    * Algorithm 12 in the paper Tight and rigorous error bounds for basic building blocks of double-word arithmetic
@@ -303,7 +295,7 @@ inline dbl_wrd dbl_wrd::mul(const dbl_wrd &a, const dbl_wrd &b) {
   return dbl_wrd(p1, p2);
 }
 
-inline dbl_wrd operator*(const dbl_wrd &a, const dbl_wrd &b) {
+dbl_wrd operator*(const dbl_wrd &a, const dbl_wrd &b) {
   /* double-double * double-double
    *
    * Relative error is upper bounded by $5^2$.
@@ -315,27 +307,28 @@ inline dbl_wrd operator*(const dbl_wrd &a, const dbl_wrd &b) {
   return dbl_wrd::mul(a, b);
 }
 
-inline dbl_wrd operator*(double a, const dbl_wrd &b) {
+dbl_wrd operator*(double a, const dbl_wrd &b) {
   /* double * double-double */
   // Calls the overloaded declaration dbl_wrd operator*(const dbl_wrd &a, double b)
   return (b * a);
 }
 
 /*********** Self-Multiplications ************/
-inline dbl_wrd &dbl_wrd::operator*=(double a) {
+dbl_wrd &dbl_wrd::operator*=(double a) {
   /* double-double *= double */
   *this = dbl_wrd::imp_mul(*this, a);
   return *this;
 }
 
-inline dbl_wrd &dbl_wrd::operator*=(const dbl_wrd &a) {
+dbl_wrd &dbl_wrd::operator*=(const dbl_wrd &a) {
   /* double-double *= double-double */
   *this = dbl_wrd::mul(*this, a);
   return *this;
 }
 
 /*********** Divisions ************/
-inline dbl_wrd dbl_wrd::div(double a, double b) {
+dbl_wrd dbl_wrd::div(double a, double b) {
+
   double q1, q2;
   double p1, p2;
   double s, e;
@@ -356,32 +349,48 @@ inline dbl_wrd dbl_wrd::div(double a, double b) {
 }
 
 /* double-double / double */
-inline dbl_wrd operator/(const dbl_wrd &a, double b) {
+dbl_wrd operator/(const dbl_wrd &a, double b) {
+  /* double-double / double
+   *
+   * Relative error is upper bounded by $3 * 2^-106$.
+   *
+   * Reference:
+   * Algorithm 15 in the paper Tight and rigorous error bounds for basic building blocks of double-word arithmetic
+   * by Joldes, Muller, and Popescu.
+   * */
 
   double q1, q2;
   double p1, p2;
-  double s, e;
+  double s_h, s_t;
   dbl_wrd r;
 
   q1 = a.hi() / b; /* approximate quotient. */
 
   /* Compute this - q1 * d */
   p1 = dbl_wrd::_two_prod(q1, b, p2);
-  s = dbl_wrd::_two_diff(a.x[0], p1, e);
-  e += a.x[1];
-  e -= p2;
+  s_h = a.hi() - p1; // Exact operation
+  s_t = s_h - p2;    // Exact operation
 
   /* get next approximation. */
-  q2 = (s + e) / b;
+  p2 = s_t + a.lo();
+  q2 = p2 / b;
 
   /* renormalize */
-  double temp;
-  r.x[0] = dbl_wrd::_fast_two_sum(q1, q2, temp);
-  r.x[1] = temp;
+  r.x[0] = dbl_wrd::_fast_two_sum(q1, q2, p2);
+  r.x[1] = p2;
   return r;
 }
 
-inline dbl_wrd dbl_wrd::sloppy_div(const dbl_wrd &a, const dbl_wrd &b) {
+dbl_wrd dbl_wrd::sloppy_div(const dbl_wrd &a, const dbl_wrd &b) {
+  /* double-double / double-double
+   *
+   * Relative error is upper bounded by $15*2^-106 + 56 * 2^{-159}$.
+   *
+   * Reference:
+   * Algorithm 16 in the paper Tight and rigorous error bounds for basic building blocks of double-word arithmetic
+   * by Joldes, Muller, and Popescu.
+   * */
+
   double s1, s2;
   double q1, q2;
   dbl_wrd r;
@@ -389,7 +398,7 @@ inline dbl_wrd dbl_wrd::sloppy_div(const dbl_wrd &a, const dbl_wrd &b) {
   q1 = a.x[0] / b.x[0]; /* approximate quotient */
 
   /* compute  this - q1 * dd */
-  r = b * q1;
+  r = b * q1; // Double-double * double
   s1 = dbl_wrd::_two_diff(a.x[0], r.x[0], s2);
   s2 -= r.x[1];
   s2 += a.x[1];
@@ -402,7 +411,16 @@ inline dbl_wrd dbl_wrd::sloppy_div(const dbl_wrd &a, const dbl_wrd &b) {
   return r;
 }
 
-inline dbl_wrd dbl_wrd::accurate_div(const dbl_wrd &a, const dbl_wrd &b) {
+dbl_wrd dbl_wrd::accurate_div(const dbl_wrd &a, const dbl_wrd &b) {
+	/* double-double / double-double
+   *
+   * Relative error is upper bounded by $15*2^-106 + 56 * 2^{-159}$.
+   *
+   * Reference:
+   * Algorithm 17 in the paper Tight and rigorous error bounds for basic building blocks of double-word arithmetic
+   * by Joldes, Muller, and Popescu.
+   * */
+
   double q1, q2, q3;
   dbl_wrd r;
 
@@ -421,7 +439,7 @@ inline dbl_wrd dbl_wrd::accurate_div(const dbl_wrd &a, const dbl_wrd &b) {
 }
 
 /* double-double / double-double */
-inline dbl_wrd operator/(const dbl_wrd &a, const dbl_wrd &b) {
+dbl_wrd operator/(const dbl_wrd &a, const dbl_wrd &b) {
 #ifdef QD_SLOPPY_DIV
   return dbl_wrd::sloppy_div(a, b);
 #else
@@ -430,52 +448,52 @@ inline dbl_wrd operator/(const dbl_wrd &a, const dbl_wrd &b) {
 }
 
 /* double / double-double */
-inline dbl_wrd operator/(double a, const dbl_wrd &b) { return dbl_wrd(a) / b; }
+dbl_wrd operator/(double a, const dbl_wrd &b) { return dbl_wrd(b) / a; }
 
-inline dbl_wrd inv(const dbl_wrd &a) { return 1.0 / a; }
+dbl_wrd inv(const dbl_wrd &a) { return 1.0 / a; }
 
 /*********** Self-Divisions ************/
 /* double-double /= double */
-inline dbl_wrd &dbl_wrd::operator/=(double a) {
+dbl_wrd &dbl_wrd::operator/=(double a) {
   *this = *this / a;
   return *this;
 }
 
 /* double-double /= double-double */
-inline dbl_wrd &dbl_wrd::operator/=(const dbl_wrd &a) {
+dbl_wrd &dbl_wrd::operator/=(const dbl_wrd &a) {
   *this = *this / a;
   return *this;
 }
 
 /********** Remainder **********/
-inline dbl_wrd drem(const dbl_wrd &a, const dbl_wrd &b) {
+dbl_wrd drem(const dbl_wrd &a, const dbl_wrd &b) {
   // Returns only the remainder
-  dbl_wrd n = nint(a / b);
+  int n = to_int(a / b);
   return (a - n * b);
 }
 
-inline dbl_wrd divrem(const dbl_wrd &a, const dbl_wrd &b, dbl_wrd &r) {
+dbl_wrd divrem(const dbl_wrd &a, const dbl_wrd &b, dbl_wrd &r) {
   // Return the quotient n and the remainder r.
-  dbl_wrd n = nint(a / b);
+  int n = to_int(a / b);
   r = a - n * b;
   return n;
 }
 
 /*********** Squaring **********/
-inline dbl_wrd sqr(const dbl_wrd &a) { return dbl_wrd::mul(a, a); }
+dbl_wrd sqr(const dbl_wrd &a) { return dbl_wrd::mul(a, a); }
 
-inline dbl_wrd dbl_wrd::square(double a) {
+dbl_wrd dbl_wrd::square(double a) {
   double p1, p2;
   p1 = dbl_wrd::_two_square(a, p2);
   return dbl_wrd(p1, p2);
 }
 
 /********** Exponentiation **********/
-inline dbl_wrd dbl_wrd::operator^(int n) { return npwr(*this, n); }
+dbl_wrd dbl_wrd::operator^(int n) { return npwr(*this, n); }
 
 /*********** Assignments ************/
 /* double-double = double */
-inline dbl_wrd &dbl_wrd::operator=(double a) {
+dbl_wrd &dbl_wrd::operator=(double &a) {
   x[0] = a;
   x[1] = 0.0;
   return *this;
@@ -483,95 +501,104 @@ inline dbl_wrd &dbl_wrd::operator=(double a) {
 
 /*********** Equality Comparisons ************/
 /* double-double == double */
-inline bool operator==(const dbl_wrd &a, double b) { return (a.x[0] == b && a.x[1] == 0.0); }
+bool operator==(const dbl_wrd &a, const double &b) { return (a.x[0] == b && a.x[1] == 0.0); }
 
 /* double-double == double-double */
-inline bool operator==(const dbl_wrd &a, const dbl_wrd &b) { return (a.x[0] == b.x[0] && a.x[1] == b.x[1]); }
+bool operator==(const dbl_wrd &a, const dbl_wrd &b) { return (a.x[0] == b.x[0] && a.x[1] == b.x[1]); }
 
 /* double == double-double */
-inline bool operator==(double a, const dbl_wrd &b) { return (a == b.x[0] && b.x[1] == 0.0); }
+bool operator==(const double &a, const dbl_wrd &b) { return (a == b.x[0] && b.x[1] == 0.0); }
 
 /*********** Greater-Than Comparisons ************/
 /* double-double > double */
-inline bool operator>(const dbl_wrd &a, double b) { return (a.x[0] > b || (a.x[0] == b && a.x[1] > 0.0)); }
+bool operator>(const dbl_wrd &a, double b) { return ((a.x[0] == b && a.x[1] > 0.0) || (a.x[0] + a.x[1] > b)); }
 
 /* double-double > double-double */
-inline bool operator>(const dbl_wrd &a, const dbl_wrd &b) { return (a.x[0] > b.x[0] || (a.x[0] == b.x[0] && a.x[1] > b.x[1])); }
+bool operator>(const dbl_wrd &a, const dbl_wrd &b) {
+  // (a.x[0] + a.x[1] > b.x[0] + b.x[1]) --> Handling just for safety. In practice, x[0] is the high word and x[1] is the low word.
+  // and so we really only need to check the condition a.x[0] > b, as the sum is not representable in double precision.
+  return ((a.x[0] == b.x[0] && a.x[1] > b.x[1]) || (a.x[0] + a.x[1] > b.x[0] + b.x[1]));
+}
 
 /* double > double-double */
-inline bool operator>(double a, const dbl_wrd &b) { return (a > b.x[0] || (a == b.x[0] && b.x[1] < 0.0)); }
+bool operator>(double a, const dbl_wrd &b) { return ((a == b.x[0] && b.x[1] < 0.0) || (b.x[0] + b.x[1] < a)); }
 
 /*********** Less-Than Comparisons ************/
 /* double-double < double */
-inline bool operator<(const dbl_wrd &a, double b) { return (a.x[0] < b || (a.x[0] == b && a.x[1] < 0.0)); }
+bool operator<(const dbl_wrd &a, double b) { return ((a.x[0] == b && a.x[1] < 0.0) || (a.x[0] + a.x[1] < b)); }
 
 /* double-double < double-double */
-inline bool operator<(const dbl_wrd &a, const dbl_wrd &b) { return (a.x[0] < b.x[0] || (a.x[0] == b.x[0] && a.x[1] < b.x[1])); }
+bool operator<(const dbl_wrd &a, const dbl_wrd &b) { return ((a.x[0] == b.x[0] && a.x[1] < b.x[1]) || (b.x[0] + b.x[1] > a.x[0] + a.x[1])); }
 
 /* double < double-double */
-inline bool operator<(double a, const dbl_wrd &b) { return (a < b.x[0] || (a == b.x[0] && b.x[1] > 0.0)); }
+bool operator<(double a, const dbl_wrd &b) { return ((a == b.x[0] && b.x[1] > 0.0) || (b.x[0] + b.x[1] > a)); }
 
 /*********** Greater-Than-Or-Equal-To Comparisons ************/
 /* double-double >= double */
-inline bool operator>=(const dbl_wrd &a, double b) { return (a.x[0] > b || (a.x[0] == b && a.x[1] >= 0.0)); }
+bool operator>=(const dbl_wrd &a, double b) { return ((a.x[0] == b && a.x[1] >= 0.0) || (a.x[0] + a.x[1] >= b)); }
 
 /* double-double >= double-double */
-inline bool operator>=(const dbl_wrd &a, const dbl_wrd &b) {
+bool operator>=(const dbl_wrd &a, const dbl_wrd &b) {
   // Can't compare a.x[0] + a.x[1] > b.x[0] + b.x[1] because the sum is not exactly representable.
-  return (a.x[0] > b.x[0] || (a.x[0] == b.x[0] && a.x[1] >= b.x[1]));
+  // Handling just for safety.
+  return ((a.x[0] == b.x[0] && a.x[1] >= b.x[1]) || (a.x[0] + a.x[1] >= b.x[0] + b.x[1]));
 }
 
 /* double >= double-double */
-inline bool operator>=(double a, const dbl_wrd &b) { return (b <= a); }
+bool operator>=(double a, const dbl_wrd &b) { return (b <= a); }
 
 /*********** Less-Than-Or-Equal-To Comparisons ************/
 /* double-double <= double */
-inline bool operator<=(const dbl_wrd &a, double b) { return (a.x[0] < b || (a.x[0] == b && a.x[1] <= 0.0)); }
+bool operator<=(const dbl_wrd &a, double b) { return ((a.x[0] == b && a.x[1] <= 0.0) || (a.x[0] + a.x[1] <= b)); }
 
 /* double-double <= double-double */
-inline bool operator<=(const dbl_wrd &a, const dbl_wrd &b) { return (a.x[0] < b.x[0] || (a.x[0] == b.x[0] && a.x[1] <= b.x[1])); }
+bool operator<=(const dbl_wrd &a, const dbl_wrd &b) { return ((a.x[0] == b.x[0] && a.x[1] <= b.x[1]) || (a.x[0] + a.x[1] <= b.x[0] + b.x[1])); }
 
 /* double <= double-double */
-inline bool operator<=(double a, const dbl_wrd &b) { return (b >= a); }
+bool operator<=(double a, const dbl_wrd &b) { return (b >= a); }
 
 /*********** Not-Equal-To Comparisons ************/
 /* double-double != double */
-inline bool operator!=(const dbl_wrd &a, double b) { return (a.x[0] != b || a.x[1] != 0.0); }
+bool operator!=(const dbl_wrd &a, double b) { return (a.x[0] != b || a.x[1] != 0.0); }
 
 /* double-double != double-double */
-inline bool operator!=(const dbl_wrd &a, const dbl_wrd &b) { return (a.x[0] != b.x[0] || a.x[1] != b.x[1]); }
+bool operator!=(const dbl_wrd &a, const dbl_wrd &b) { return (a.x[0] != b.x[0] || a.x[1] != b.x[1]); }
 
 /* double != double-double */
-inline bool operator!=(double a, const dbl_wrd &b) { return (a != b.x[0] || b.x[1] != 0.0); }
+bool operator!=(double a, const dbl_wrd &b) { return (a != b.x[0] || b.x[1] != 0.0); }
 
 /*********** Micellaneous ************/
 /*  this == 0 */
-inline bool dbl_wrd::is_zero() const { return (x[0] == 0.0); }
+bool dbl_wrd::is_zero() const { return (x[0] == 0.0 && x[1] == 0.0); }
 
 /*  this == 1 */
-inline bool dbl_wrd::is_one() const { return (x[0] == 1.0 && x[1] == 0.0); }
+bool dbl_wrd::is_one() const { return (x[0] == 1.0 && x[1] == 0.0); }
 
 /*  this > 0 */
-inline bool dbl_wrd::is_positive() const {
+bool dbl_wrd::is_positive() const {
   // magnitude of x[0] is always greater than x[1]
   return (x[0] > 0.0);
 }
 
 /* this < 0 */
-inline bool dbl_wrd::is_negative() const { return (x[0] < 0.0); }
+bool dbl_wrd::is_negative() const { return (x[0] < 0.0); }
 
-inline dbl_wrd abs(const dbl_wrd &a) {
-  /* Absolute value */
+dbl_wrd abs(const dbl_wrd &a) {
+  /* Absolute value
+   * adding overload to std::abs.
+   * */
   return (a.x[0] < 0.0) ? -a : a;
 }
 
-inline dbl_wrd fabs(const dbl_wrd &a) {
+dbl_wrd fabs(const dbl_wrd &a) {
   // This is calling std::abs.
   return abs(a);
 }
 
-inline dbl_wrd nint(const dbl_wrd &a) {
-  /* Round to Nearest integer */
+dbl_wrd nint(const dbl_wrd &a) {
+  /* Round to Nearest integer
+   * 1/2 is rounded to 1.0.
+   * */
   double hi = dbl_wrd::_nint(a.x[0]);
   double lo;
 
@@ -579,7 +606,7 @@ inline dbl_wrd nint(const dbl_wrd &a) {
     /* High word is an integer already.  Round the low word.*/
     lo = dbl_wrd::_nint(a.x[1]);
 
-    /* Renormalize. This is needed if x[0] = some integer, x[1] = 1/2. This will
+    /* Renormalize. This is needed if x[0] = some integer and x[1] = 1/2. This will
      * cause lo to be an integer.*/
     hi = dbl_wrd::_fast_two_sum(hi, lo, lo);
   } else {
@@ -595,7 +622,7 @@ inline dbl_wrd nint(const dbl_wrd &a) {
   return dbl_wrd(hi, lo);
 }
 
-inline dbl_wrd floor(const dbl_wrd &a) {
+dbl_wrd floor(const dbl_wrd &a) {
   double hi = std::floor(a.x[0]);
   double lo = 0.0;
 
@@ -608,7 +635,7 @@ inline dbl_wrd floor(const dbl_wrd &a) {
   return dbl_wrd(hi, lo);
 }
 
-inline dbl_wrd ceil(const dbl_wrd &a) {
+dbl_wrd ceil(const dbl_wrd &a) {
   double hi = std::ceil(a.x[0]);
   double lo = 0.0;
 
@@ -621,25 +648,25 @@ inline dbl_wrd ceil(const dbl_wrd &a) {
   return dbl_wrd(hi, lo);
 }
 
-inline dbl_wrd aint(const dbl_wrd &a) {
+dbl_wrd aint(const dbl_wrd &a) {
   // This does round towards 0 when rounding a float to an integer.
   return (a.x[0] >= 0.0) ? floor(a) : ceil(a);
 }
 
-inline double to_double(const dbl_wrd &a) {
-  /* Cast to double by ignoring the lo number. This number represents the rounding error to the nearest floating point number and that the number when
-   * computed with infinite precision is not representatble*/
+double to_double(const dbl_wrd &a) {
+  /* Cast to double by ignoring the lo number. This number represents the rounding error to the nearest floating point number and that the
+   * number when computed with infinite precision is not representatble*/
   return a.hi();
 }
 
-inline int to_int(const dbl_wrd &a) {
+int to_int(const dbl_wrd &a) {
   /* Cast to int. */
   return static_cast<int>(a.hi());
 }
 
-inline dbl_wrd dbl_wrd::rand() {
+dbl_wrd dbl_wrd::rand(double l_bound, double u_bound) {
   /* Random number generator */
-  return ddrand();
+  return ddrand(l_bound, u_bound);
 }
 
 void dbl_wrd::error(const char *msg) {
@@ -679,6 +706,7 @@ dbl_wrd sqrt(const dbl_wrd &a) {
   double x = 1.0 / std::sqrt(a.x[0]); // Initial approximation, which is correct to the double precision.
                                       // It takes one more iteration to get it accurate to the dbl_wrd precision.
   double ax = a.x[0] * x;             // This is equivalent to $a * (1/a^{1/2})$, which equals $a^{1/2}$.
+                          // TODO: There is something wrong with this algorithm. It is not returning the most precision value for the lo term.
   return dbl_wrd::add(ax, (a - dbl_wrd::square(ax)).x[0] * (x * 0.5));
 }
 
@@ -912,4 +940,18 @@ dbl_wrd ddrand(double l_bound, double u_bound) {
   return out;
 }
 
+const double dbl_wrd::get_eps() { return _eps; }
+const dbl_wrd dbl_wrd::get_max() { return _max; }
+const double dbl_wrd::get_min() { return _min_normalized; }
 const int dbl_wrd::get_digits() { return _digits; }
+
+double dbl_wrd::get_hi() const { return x[0]; }
+
+double dbl_wrd::get_lo() const { return x[1]; }
+
+void print(const dbl_wrd &a) {
+  /* In reality, the number of digits after the decimal point in base-10 is not fixed.
+   * */
+  std::cout << std::setprecision(100) << "high-word: " << a.hi() << '\n';
+  std::cout << std::setprecision(100) << "low-word: " << a.lo() << '\n';
+}

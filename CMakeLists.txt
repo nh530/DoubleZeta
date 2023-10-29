@@ -43,9 +43,11 @@ set(EXECUTABLES "${CMAKE_CURRENT_SOURCE_DIR}/examples")
 add_executable(zeta.o ${EXECUTABLES}/ZetaSession.test.cpp)
 add_executable(main.o ${EXECUTABLES}/main.cpp)
 add_executable(optimization.o ${EXECUTABLES}/optimization.cpp)
+add_executable(simple_dw.o ${EXECUTABLES}/simple_dw.cpp)
 target_link_libraries(zeta.o PUBLIC src)
 target_link_libraries(main.o PUBLIC src)
 target_link_libraries(optimization.o PUBLIC src)
+target_link_libraries(simple_dw.o PUBLIC src)
 
 
 ################################################ Unit step ######################################################################
@@ -56,6 +58,8 @@ add_executable(test_run
 	./tests/matrix.test.cpp
 	./tests/regression.test.cpp
 	./tests/gradientdescent.test.cpp
+	./tests/bsc_core.test.cpp
+	./tests/dw.test.cpp
 	#./tests/integration/LinearRegression.test.cpp
 )
 target_link_libraries(test_run GTest::gtest_main src)

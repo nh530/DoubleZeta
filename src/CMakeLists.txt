@@ -1,7 +1,7 @@
 # This defines the library build steps for the DoubleZeta source code, which is under the src directory.
 project(src)
 
-set(THREADPOOL_DIR "${CMAKE_CURRENT_SOURCE_DIR}//threadpool")
+set(THREADPOOL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/threadpool")
 set(TYPING_DIR "${CMAKE_CURRENT_SOURCE_DIR}/typing")
 set(REGRESSION_DIR "${CMAKE_CURRENT_SOURCE_DIR}/regression")
 set(ALGEBRA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/algba_cmd")
@@ -41,6 +41,7 @@ set(
 	DOUBLE_WORD_FILES
 	${DOUBLE_WORD_DIR}/bsc_core.h
 	${DOUBLE_WORD_DIR}/dw.cpp
+	${DOUBLE_WORD_DIR}/dw.h
 	${DOUBLE_WORD_DIR}/dw_consts.cpp
 	${DOUBLE_WORD_DIR}/fpu_fix.cpp
 )

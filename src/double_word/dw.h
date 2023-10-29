@@ -4,11 +4,12 @@
 #include "config/settings.h"
 #include <cmath>
 #include <double_word/fpu_fix.h>
-#include <iostream>
 #include <limits>
 #include <string>
 
 class dbl_wrd {
+  // hi word is 53-bit representation
+  // lo word is the actual - 53-bit representation.
   double x[2];
 
 public:
@@ -47,8 +48,7 @@ public:
   dbl_wrd &operator*=(const dbl_wrd &a);
   dbl_wrd &operator/=(double a);
   dbl_wrd &operator/=(const dbl_wrd &a);
-  dbl_wrd &operator=(double a);
-  dbl_wrd &operator=(const char *s);
+  dbl_wrd &operator=(double &a);
   dbl_wrd operator^(int n);
   static dbl_wrd square(double d); // square
   static dbl_wrd sqrt(double a);   // squareroot
@@ -56,11 +56,13 @@ public:
   bool is_one() const;
   bool is_positive() const;
   bool is_negative() const;
-  static dbl_wrd rand(void);
+  static dbl_wrd rand(double l_bound, double u_bound);
   static const double get_eps();
   static const dbl_wrd get_max();
   static const double get_min();
   static const int get_digits();
+  double get_hi() const;
+  double get_lo() const;
   static const dbl_wrd _e;
   static const dbl_wrd _log2;
   static const dbl_wrd _log10;
@@ -106,8 +108,8 @@ private:
   friend dbl_wrd operator/(const dbl_wrd &a, double b);
   friend dbl_wrd operator/(double a, const dbl_wrd &b);
   friend dbl_wrd operator/(const dbl_wrd &a, const dbl_wrd &b);
-  friend bool operator==(const dbl_wrd &a, double b);
-  friend bool operator==(double a, const dbl_wrd &b);
+  friend bool operator==(const dbl_wrd &a, const double &b);
+  friend bool operator==(const double &a, const dbl_wrd &b);
   friend bool operator==(const dbl_wrd &a, const dbl_wrd &b);
   friend bool operator<=(const dbl_wrd &a, double b);
   friend bool operator<=(double a, const dbl_wrd &b);
@@ -145,8 +147,8 @@ private:
   friend dbl_wrd floor(const dbl_wrd &a);
   friend dbl_wrd ceil(const dbl_wrd &a);
   friend dbl_wrd aint(const dbl_wrd &a);
-	friend dbl_wrd fabs(const dbl_wrd &a);
-	friend dbl_wrd abs(const dbl_wrd &a);
+  friend dbl_wrd fabs(const dbl_wrd &a);
+  friend dbl_wrd abs(const dbl_wrd &a);
 };
 
 namespace std {
@@ -164,8 +166,6 @@ public:
   inline static const int digits10 = _digits; // Precision in base 10.
 };
 } // namespace std
-
-dbl_wrd ddrand(void);
 
 // OPERATOR OVERLOAD
 
@@ -185,8 +185,8 @@ dbl_wrd operator/(const dbl_wrd &a, double b);
 dbl_wrd operator/(double a, const dbl_wrd &b);
 dbl_wrd operator/(const dbl_wrd &a, const dbl_wrd &b);
 
-bool operator==(const dbl_wrd &a, double b);
-bool operator==(double a, const dbl_wrd &b);
+bool operator==(const dbl_wrd &a, const double &b);
+bool operator==(const double &a, const dbl_wrd &b);
 bool operator==(const dbl_wrd &a, const dbl_wrd &b);
 
 bool operator<=(const dbl_wrd &a, double b);
@@ -217,14 +217,16 @@ inline bool isinf(const dbl_wrd &a) { return a.isinf(); }
 
 /* Computes  dd * d  where d is known to be a power of 2. */
 
-dbl_wrd ddrand(void);
+dbl_wrd ddrand(double l_bound, double u_bound);
 
 double to_double(const dbl_wrd &a);
 int to_int(const dbl_wrd &a);
 
 dbl_wrd fabs(const dbl_wrd &a);
 dbl_wrd abs(const dbl_wrd &a); /* same as fabs */
-
+dbl_wrd log10(const dbl_wrd &a);
 dbl_wrd fmod(const dbl_wrd &a, const dbl_wrd &b);
+
+void print(const dbl_wrd &a);
 
 #endif

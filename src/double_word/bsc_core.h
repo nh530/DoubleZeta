@@ -2,7 +2,7 @@
  * This file contains the basic functions used both by the double-word class
  * These are declared as inline functions as
  * they are the smallest building blocks of the double-double.
- * References: 
+ * References:
  *  - Handbook of floating point arithmetic by Jean-Michel Muller, et al. Chapter 4.
  *  - Tight and Rigorous error bounds for basic building blocks of double-word arithmetic by Joldes, Muller, and Popescu
  */
@@ -76,7 +76,7 @@ inline double two_diff(double a, double b, double &err) {
   /* Computes float(a-b) and err(a+b).
    * Knuth and Moller algorithm
    * */
-  return two_diff(a, -b, err);
+  return two_sum(a, -b, err);
 }
 
 inline void split(double a, double &hi, double &lo) {
