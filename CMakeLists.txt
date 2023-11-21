@@ -10,6 +10,8 @@ set(CMAKE_MODULE_PATH "/Users/normanhong/Documents/coding/c_pp/repos/DoubleZeta/
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE) # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(GTEST_URL "https://github.com/google/googletest/archive/5376968f6948923e2411081fd9372e71a59d8e77.zip")
 
+add_compile_options(-mfma -fno-fast-math)
+
 #configure_file(DoubleZetaConfig.h.in DoubleZetaConfig.h) # it knows to look for input in source dir and output in binary dir.
 
 # For debugging.
@@ -44,10 +46,12 @@ add_executable(zeta.o ${EXECUTABLES}/ZetaSession.test.cpp)
 add_executable(main.o ${EXECUTABLES}/main.cpp)
 add_executable(optimization.o ${EXECUTABLES}/optimization.cpp)
 add_executable(simple_dw.o ${EXECUTABLES}/simple_dw.cpp)
+add_executable(parallel_math.o ${EXECUTABLES}/benchmark/parallel_math.cpp)
 target_link_libraries(zeta.o PUBLIC src)
 target_link_libraries(main.o PUBLIC src)
 target_link_libraries(optimization.o PUBLIC src)
 target_link_libraries(simple_dw.o PUBLIC src)
+target_link_libraries(parallel_math.o PUBLIC src)
 
 
 ################################################ Unit step ######################################################################
