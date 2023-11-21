@@ -36,6 +36,8 @@ public:
   template <int_or_float T> std::future<NumericVariant> SubmitTask(T (*func)());
   template <int_or_float T> std::future<NumericVariant> SubmitTask(T (*func)(const T *), T *arg1);
   template <int_or_float T> std::future<NumericVariant> SubmitTask(T (*func)(const T *, const T *), T *arg1, T *arg2);
+  template <Numeric T, unsigned long N>
+  std::future<NumericVariant> SubmitTask(T (*func)(std::array<T, N> const &), std::array<T, N> const &arg1);
   int Size();
   void StartPool();
   void ShutdownPool();

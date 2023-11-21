@@ -9,7 +9,6 @@
 #include "Job.h"
 #include "typing/DTypes.h"
 #include <future>
-#include <iostream>
 #include <queue>
 #include <thread>
 #include <variant>
@@ -25,16 +24,17 @@ void ThreadPool::ThreadLoop() {
         Each thread should be running its own infinite loop, constantly waiting for new tasks to grab and run.
         */
   while (true) {
+    Job<NumericVariant> job;
     {
       std::unique_lock<std::mutex> lock(queue_mutex);
       mutex_condition.wait(lock, [this] { return !jobs.empty() || should_terminate; });
       if (should_terminate && jobs.empty()) {
         return;
       }
-      Job<NumericVariant> job = std::move(jobs.front());
+      job = std::move(jobs.front());
       jobs.pop();
-      job.Run(); // Execute job
     }
+    job.Run(); // Execute job
   }
 }
 
@@ -44,7 +44,7 @@ void ThreadPool::Start(int num_threads) {
     threads = std::thread::hardware_concurrency() - 2;
   else
     threads = num_threads;
-  for (int i = 0; i < num_threads; i++) {
+  for (int i = 0; i < threads; i++) {
     // Each execution thread is running the ThreadLoop member function.
     thread_pool.push_back(std::thread(&ThreadPool::ThreadLoop,
                                       this)); // Implicitly, member function's first argument is a pointer that refers to itself or some

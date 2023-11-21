@@ -1,6 +1,5 @@
 #include "typing/DTypes.h"
 #include <future>
-
 #ifndef JOB_TPP
 #define JOB_TPP
 
@@ -43,6 +42,9 @@ Job<NumericVariant>::Job(NumericVariant (*func_ptr)(const NumericVariant *), Num
     : _func_ptr{new std::packaged_task<NumericVariant(const NumericVariant *)>(*func_ptr)}, _args{arg1}, _args2{NULL} {}
 Job<NumericVariant>::Job(NumericVariant (*func_ptr)())
     : _func_ptr_no_args{new std::packaged_task<NumericVariant()>(*func_ptr)}, _args{NULL}, _args2{NULL} {}
+
+Job<NumericVariant>::Job() : _args{NULL}, _args2{NULL}, _func_ptr_no_args{NULL}, _func_ptr{NULL}, _func_ptr_2_args{NULL} {}
+
 template <int_or_float T> Job<NumericVariant>::Job(T (*func_ptr)()) : _args{NULL}, _args2{NULL} {
   // Handle the conversion from Job<float> to Job<NumericVariant> by creating a new function that outputs NumericVariant.
   _func_ptr_no_args = new std::packaged_task<NumericVariant()>([func_ptr]() -> NumericVariant {
@@ -93,6 +95,34 @@ Job<NumericVariant>::Job(Job<float> other) {
 }
 Job<NumericVariant>::Job(Job<NumericVariant> &&other) {
   if (other._args != NULL)
+    _args = new NumericVariant{*other._args};
+  else
+    _args = NULL;
+  if (other._args2 != NULL)
+    _args2 = new NumericVariant{*other._args2};
+  else
+    _args2 = NULL;
+  if (other._func_ptr != NULL)
+    _func_ptr = std::move(other._func_ptr);
+  else
+    _func_ptr = NULL;
+  if (other._func_ptr_no_args != NULL)
+    _func_ptr_no_args = std::move(other._func_ptr_no_args);
+  else
+    _func_ptr_no_args = NULL;
+  if (other._func_ptr_2_args != NULL)
+    _func_ptr_2_args = std::move(other._func_ptr_2_args);
+  else
+    _func_ptr_2_args = NULL;
+
+  other._func_ptr = NULL;
+  other._func_ptr_2_args = NULL;
+  other._func_ptr_no_args = NULL;
+}
+Job<NumericVariant> &Job<NumericVariant>::operator=(Job<NumericVariant> &&other) {
+  delete _args;
+  delete _args2;
+	if (other._args != NULL)
 		_args = new NumericVariant{*other._args};
 	else
 		_args = NULL;
@@ -101,30 +131,18 @@ Job<NumericVariant>::Job(Job<NumericVariant> &&other) {
 	else
 		_args2 = NULL;
 	if (other._func_ptr != NULL)
-		_func_ptr = std::move(other._func_ptr);
-	else
-		_func_ptr = NULL;
-	if (other._func_ptr_no_args != NULL)
-		_func_ptr_no_args = std::move(other._func_ptr_no_args);
-	else
-		_func_ptr_no_args = NULL;
-	if (other._func_ptr_2_args != NULL)
-		_func_ptr_2_args = std::move(other._func_ptr_2_args);
-	else
-		_func_ptr_2_args = NULL;
+    _func_ptr = std::move(other._func_ptr);
+  else
+    _func_ptr = NULL;
+  if (other._func_ptr_no_args != NULL)
+    _func_ptr_no_args = std::move(other._func_ptr_no_args);
+  else
+    _func_ptr_no_args = NULL;
+  if (other._func_ptr_2_args != NULL)
+    _func_ptr_2_args = std::move(other._func_ptr_2_args);
+  else
+    _func_ptr_2_args = NULL;
 
-  other._func_ptr = NULL;
-  other._func_ptr_2_args = NULL;
-  other._func_ptr_no_args = NULL;
-}
-Job<NumericVariant> &Job<NumericVariant>::operator=(Job<NumericVariant> &&other) {
-  delete _args;
-  _args = new NumericVariant{*other._args};
-  delete _args2;
-  _args2 = new NumericVariant{*other._args2};
-  _func_ptr = other._func_ptr;
-  _func_ptr_2_args = other._func_ptr_2_args;
-  _func_ptr_no_args = other._func_ptr_no_args;
   other._func_ptr = NULL;
   other._func_ptr_2_args = NULL;
   other._func_ptr_no_args = NULL;
@@ -133,8 +151,8 @@ Job<NumericVariant> &Job<NumericVariant>::operator=(Job<NumericVariant> &&other)
 }
 Job<NumericVariant>::~Job() {
   delete _args;
-  delete _args2; 
-	// Don't need to release packaged_task pointers. Forgot why.
+  delete _args2;
+  // Don't need to release packaged_task pointers. Forgot why.
 }
 void Job<NumericVariant>::Run() {
   // Executes function and pass in arguments.
@@ -147,11 +165,11 @@ void Job<NumericVariant>::Run() {
 }
 
 std::future<NumericVariant> Job<NumericVariant>::GetFuture() {
-  if (_func_ptr_2_args != NULL)
+  if (_func_ptr_2_args != NULL) {
     return _func_ptr_2_args->get_future();
-  else if (_func_ptr != NULL)
+  } else if (_func_ptr != NULL) {
     return _func_ptr->get_future();
-  else
+  } else
     return _func_ptr_no_args->get_future();
 }
 

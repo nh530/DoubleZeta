@@ -29,6 +29,7 @@ private:
 
 template <> class Job<NumericVariant> {
 public:
+	Job();
   Job(NumericVariant (*func_ptr)(const NumericVariant *), NumericVariant *arg1);
   Job(NumericVariant (*func_ptr)());
   Job(NumericVariant (*func_ptr)(const NumericVariant), NumericVariant *arg1, NumericVariant *arg2);
@@ -37,15 +38,6 @@ public:
   template <int_or_float T> Job(T (*func_ptr)(const T), T arg1);
   template <int_or_float T> Job(T (*func_ptr)(const T *, const T *), T *arg1, T *arg2);
   template <int_or_float T> Job(T (*func_ptr)(const T, const T), T arg1, T arg2);
-  // Job(float (*func_ptr)());
-  // Job(float (*func_ptr)(const float *), float *arg1);
-  // Job(float (*func_ptr)(const float), float arg1);
-  // Job(float (*func_ptr)(const float *, const float *), float *arg1, float *arg2);
-  // Job(float (*func_ptr)(const float, const float), float arg1, float arg2);
-  // Job(int (*func_ptr)(const int *), int *arg1);
-  // Job(int (*func_ptr)(const int), int arg1);
-  // Job(int (*func_ptr)(const int *, const int *), int *arg1, int *arg2);
-  // Job(int (*func_ptr)(const int, const int), int arg1, int arg2);
   Job(Job<float> other);
   Job(Job<NumericVariant> &other) = delete;
   Job &operator=(Job<NumericVariant> &other) = delete;
@@ -56,9 +48,9 @@ public:
   std::future<NumericVariant> GetFuture();
 
 private:
-  std::packaged_task<NumericVariant(const NumericVariant *, const NumericVariant *)> *_func_ptr_2_args;
-  std::packaged_task<NumericVariant(const NumericVariant *)> *_func_ptr;
-  std::packaged_task<NumericVariant()> *_func_ptr_no_args;
+  std::packaged_task<NumericVariant(const NumericVariant *, const NumericVariant *)> *_func_ptr_2_args = NULL;
+  std::packaged_task<NumericVariant(const NumericVariant *)> *_func_ptr = NULL;
+  std::packaged_task<NumericVariant()> *_func_ptr_no_args = NULL;
   const NumericVariant *_args;
   const NumericVariant *_args2;
 };
