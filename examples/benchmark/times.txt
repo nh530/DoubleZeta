@@ -6,3 +6,19 @@ Number of tasks: 1000000
 Number of Summations: 100000
 1.31501e+06
 195849
+Number of tasks: 1000
+Number of Summations: 100000
+1433.4
+176.768
+Number of tasks: 10000
+Number of Summations: 100000
+14273.8
+1851.28
+Number of tasks: 10000000
+Number of Summations: 100
+13560.5
+41486.2
+Number of tasks: 10000000
+Number of Summations: 1000
+130683
+27489.9
