@@ -13,7 +13,7 @@ class ThreadPool {
 
 public:
   void Start(int num_threads = -1);
-  void QueueJob(Job<NumericVariant> job);
+  void QueueJob(BaseJob &job);
   void Stop();
   bool Busy();
 
@@ -23,21 +23,36 @@ private:
   std::mutex queue_mutex;                  // Prevents data races to the job queue; must aquire lock to interact with queue.
   std::condition_variable mutex_condition; // Allows threads to wait on new jobs or termination
   std::vector<std::thread> thread_pool;
-  std::queue<Job<NumericVariant>> jobs;
+  std::queue<BaseJob *> jobs;
+};
+
+template <Numeric T> struct Status {
+  /* This user defined type is to provide the end user a controlled way to check when the job is done.
+   * The future object can be returned directly, however, there will be no way to correctly achieve the deletion of Job objects because
+   * DoubleZeta to know when the end-user is done with the results or when the end-user collects the results.
+   * Therefore, freeing up the resource consumed by the Job is left up to the user via deletion of this Status object.
+   *
+   * Notes:
+   * - Something like shared pointers can be used to manage the memory of the Job object. However, it was decided to keep the application as lean
+   *   as possible.
+   * */
+  T GetResults();
+  std::future<T> GetFuture();
+  Job<T> *_data;
+  ~Status();
 };
 
 class ZetaSession {
 public:
   ZetaSession(int thread_cnt);
-  ~ZetaSession(); // Releases resources
+  ~ZetaSession();
   bool Busy();
-  std::future<NumericVariant> SubmitTask(NumericVariant (*func)());
-  void SubmitTask(Job<NumericVariant> task);
-  template <int_or_float T> std::future<NumericVariant> SubmitTask(T (*func)());
-  template <int_or_float T> std::future<NumericVariant> SubmitTask(T (*func)(const T *), T *arg1);
-  template <int_or_float T> std::future<NumericVariant> SubmitTask(T (*func)(const T *, const T *), T *arg1, T *arg2);
-  template <Numeric T, unsigned long N>
-  std::future<NumericVariant> SubmitTask(T (*func)(std::array<T, N> const &), std::array<T, N> const &arg1);
+  Status<NumericVariant> *SubmitTask(NumericVariant (*func)());
+  void SubmitTask(BaseJob &task);
+  template <Numeric T> Status<T> *SubmitTask(T (*func)());
+  template <Numeric T> Status<T> *SubmitTask(T (*func)(const T *), T *arg1);
+  template <Numeric T> Status<T> *SubmitTask(T (*func)(const T *, const T *), T *arg1, T *arg2);
+
   int Size();
   void StartPool();
   void ShutdownPool();

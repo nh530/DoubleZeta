@@ -6,39 +6,83 @@ Reference: https://isocpp.org/wiki/faq/templates#templates-defn-vs-decl
 #include "typing/DTypes.h"
 #include <functional>
 #include <future>
+#include <stdexcept>
 #ifndef JOB_H
 #define JOB_H
 
-template <Numeric T> class Job {
+class BaseJob {
 public:
-  Job(T (*func_ptr)(const T *), T *arg1); // Function takes a single pointer of any type T and returns the same type.
-  Job(T (*func_ptr)());                   // Function takes no argument and returns type T.
-  Job(T (*func_ptr)(const T *, const T *), T *arg1, T *arg2);
-  Job(const Job<T> &other);
-  Job &operator=(const Job<T> &a);
-  ~Job();
-  virtual T Run();
-
-private:
-  std::function<T(const T *, const T *)> _func_ptr_2_args;
-  std::function<T(const T *)> _func_ptr;
-  std::function<T()> _func_ptr_no_args;
-  const T *_args;
-  const T *_args2;
+  virtual void Run() = 0;
+  template <Numeric T> std::future<T> GetFuture();
+  virtual ~BaseJob() { // Do nothing; This is handled in subclasses (derived classes)
+  }
 };
 
-template <> class Job<NumericVariant> {
+template <Numeric T> class Job : public BaseJob {
 public:
-	Job();
+  Job();
+  Job(T (*func_ptr)(const T *), T *arg1);
+  Job(T (*func_ptr)());
+  Job(T (*func_ptr)(const T *, const T *), T *arg1, T *arg2);
+  Job(Job<T> &other) = delete;
+  Job &operator=(Job<T> &other) = delete;
+  Job(Job<T> &&other);
+  Job &operator=(Job<T> &&other);
+  ~Job();
+  void Run();
+  std::future<T> GetFuture();
+  T GetArg1();
+  T GetArg2();
+
+private:
+  std::packaged_task<T(const T *, const T *)> *_func_ptr_2_args = NULL;
+  std::packaged_task<T(const T *)> *_func_ptr = NULL;
+  std::packaged_task<T()> *_func_ptr_no_args = NULL;
+  const T *_args = new T;
+  const T *_args2 = new T;
+};
+
+template <int_or_float T> class JobArr : public BaseJob {
+public:
+  JobArr();
+  JobArr(T (*func_ptr)(const T *, const int *), T *arg1, int _len_args1);
+	JobArr(T (*func_ptr)(const T *, const int *, const int *), T *arg1, int _len_args1, int c);
+  JobArr(T (*func_ptr)(const T *, const T *, const int *, const int *), T *arg1, T *arg2, int _len_args1, int _len_args2);
+  JobArr(JobArr<T> &other) = delete;
+  JobArr &operator=(JobArr<T> &other) = delete;
+  JobArr(JobArr<T> &&other);
+  JobArr &operator=(JobArr<T> &&other);
+  ~JobArr();
+  void Run();
+  std::future<T> GetFuture();
+  T *GetArg1();
+  T *GetArg2();
+  int GetLen1();
+  int GetLen2();
+
+private:
+  std::packaged_task<T(const T *, const T *, const int *, const int *)> *_func_ptr_2_args = NULL;
+  std::packaged_task<T(const T *, const int *)> *_func_ptr = NULL;
+  std::packaged_task<T()> *_func_ptr_no_args = NULL;
+  T *_args;
+  T *_args2;
+  int _len1;
+  int _len2;
+};
+
+template <> class Job<NumericVariant> : public BaseJob {
+  // Explicit template specialization
+public:
+  Job();
   Job(NumericVariant (*func_ptr)(const NumericVariant *), NumericVariant *arg1);
   Job(NumericVariant (*func_ptr)());
-  Job(NumericVariant (*func_ptr)(const NumericVariant), NumericVariant *arg1, NumericVariant *arg2);
+  Job(NumericVariant (*func_ptr)(const NumericVariant *, const NumericVariant *), NumericVariant *arg1, NumericVariant *arg2);
   template <int_or_float T> Job(T (*func_ptr)());
   template <int_or_float T> Job(T (*func_ptr)(const T *), T *arg1);
   template <int_or_float T> Job(T (*func_ptr)(const T), T arg1);
   template <int_or_float T> Job(T (*func_ptr)(const T *, const T *), T *arg1, T *arg2);
   template <int_or_float T> Job(T (*func_ptr)(const T, const T), T arg1, T arg2);
-  Job(Job<float> other);
+  // Deleted copy initailization and copy assignment.
   Job(Job<NumericVariant> &other) = delete;
   Job &operator=(Job<NumericVariant> &other) = delete;
   Job(Job<NumericVariant> &&other);
@@ -46,6 +90,8 @@ public:
   ~Job();
   void Run();
   std::future<NumericVariant> GetFuture();
+  NumericVariant GetArg1();
+  NumericVariant GetArg2();
 
 private:
   std::packaged_task<NumericVariant(const NumericVariant *, const NumericVariant *)> *_func_ptr_2_args = NULL;
@@ -54,6 +100,10 @@ private:
   const NumericVariant *_args;
   const NumericVariant *_args2;
 };
+
+class JobFloat : public Job<float> {};
+class JobInt : public Job<int> {};
+class JobNumv : public Job<NumericVariant> {};
 
 #include "Job.tpp"
 

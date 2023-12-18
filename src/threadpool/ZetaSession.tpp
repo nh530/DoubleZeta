@@ -6,9 +6,10 @@
  * parallel computing of many equations.
  */
 
-#include "Job.h"
+#include "threadpool/Job.h"
 #include "typing/DTypes.h"
 #include <future>
+#include <iostream>
 #include <queue>
 #include <thread>
 #include <variant>
@@ -24,17 +25,18 @@ void ThreadPool::ThreadLoop() {
         Each thread should be running its own infinite loop, constantly waiting for new tasks to grab and run.
         */
   while (true) {
-    Job<NumericVariant> job;
+    BaseJob *job;
     {
       std::unique_lock<std::mutex> lock(queue_mutex);
       mutex_condition.wait(lock, [this] { return !jobs.empty() || should_terminate; });
       if (should_terminate && jobs.empty()) {
         return;
       }
-      job = std::move(jobs.front());
+      job = jobs.front();
       jobs.pop();
     }
-    job.Run(); // Execute job
+    // Execute job
+    job->Run();
   }
 }
 
@@ -52,12 +54,12 @@ void ThreadPool::Start(int num_threads) {
   }
 }
 
-void ThreadPool::QueueJob(Job<NumericVariant> job) {
+void ThreadPool::QueueJob(BaseJob &job) {
   // Add a new job to the pool; use a lock so that there isn't a data race.
   // thread_pool->QueueJob([] { /* ... */ });
   {
     std::unique_lock<std::mutex> lock(queue_mutex);
-    jobs.push(std::move(job));
+    jobs.push(&job); // Passing in address
   }
   mutex_condition.notify_one();
 }
@@ -94,32 +96,62 @@ ZetaSession::ZetaSession(int thread_cnt) : num_threads{thread_cnt} {
 
 ZetaSession::~ZetaSession() { pool.Stop(); } // Releases resources
 
-std::future<NumericVariant> ZetaSession::SubmitTask(NumericVariant (*func)()) {
-  Job<NumericVariant> task{func};
-  std::future<NumericVariant> out = task.GetFuture();
-  pool.QueueJob(std::move(task));
-  return out;
-}
-template <int_or_float T> std::future<NumericVariant> ZetaSession::SubmitTask(T (*func)()) {
-  Job<NumericVariant> task{func};
-  std::future<NumericVariant> out = task.GetFuture();
-  pool.QueueJob(std::move(task));
-  return out;
-}
-template <int_or_float T> std::future<NumericVariant> ZetaSession::SubmitTask(T (*func)(const T *), T *arg1) {
-  Job<NumericVariant> task{func, arg1};
-  std::future<NumericVariant> out = task.GetFuture();
-  pool.QueueJob(std::move(task));
-  return out;
-}
-template <int_or_float T> std::future<NumericVariant> ZetaSession::SubmitTask(T (*func)(const T *, const T *), T *arg1, T *arg2) {
-  Job<NumericVariant> task{func, arg1, arg2};
-  std::future<NumericVariant> out = task.GetFuture();
-  pool.QueueJob(std::move(task));
+Status<NumericVariant> *ZetaSession::SubmitTask(NumericVariant (*func)()) {
+  Job<NumericVariant> *task = new Job<NumericVariant>{func};
+  pool.QueueJob(*task);
+  Status<NumericVariant> *out = new Status<NumericVariant>{._data = task};
   return out;
 }
 
-void ZetaSession::SubmitTask(Job<NumericVariant> task) { pool.QueueJob(std::move(task)); }
+template <Numeric T> Status<T> *ZetaSession::SubmitTask(T (*func)()) {
+  /* This method is used to submit a 0 parameter function to the thread pool. A status object is created on the Heap, and a
+   * pointer to this object is returned to the caller.
+   *
+   * Notes:
+   * - Cannot return a copy of this object. This will create object on the stack instead and create an issue for the queue, which takes in
+   *   pointers only. i.e. Job object resource will be released before completion.
+   * */
+  Job<T> *task = new Job<T>{func};
+  pool.QueueJob(*task);
+  Status<T> *out = new Status<T>{._data = task};
+  return out;
+}
+
+template <Numeric T> Status<T> *ZetaSession::SubmitTask(T (*func)(const T *), T *arg1) {
+  /* This method is used to submit a 1 parameter function to the thread pool. A status object is created on the Heap, and a
+   * pointer to this object is returned to the caller.
+   *
+   * Notes:
+   * - Cannot return a copy of this object. This will create object on the stack instead and create an issue for the queue, which takes in
+   *   pointers only. i.e. Job object resource will be released before completion.
+   * */
+  Job<T> *task = new Job<T>{func, arg1};
+  pool.QueueJob(*task);
+  Status<T> *out = new Status<T>{._data = task};
+  return out;
+}
+
+template <Numeric T> Status<T> *ZetaSession::SubmitTask(T (*func)(const T *, const T *), T *arg1, T *arg2) {
+  /* This method is used to submit a 2 parameter function to the thread pool. A status object is created on the Heap, and a
+   * pointer to this object is returned to the caller.
+   *
+   * Notes:
+   * - Cannot return a copy of this object. This will create object on the stack instead and create an issue for the queue, which takes in
+   *   pointers only. i.e. Job object resource will be released before completion.
+   * */
+  Job<T> *task = new Job<T>{func, arg1, arg2};
+  pool.QueueJob(*task);
+  Status<T> *out = new Status<T>{._data = task};
+  return out;
+}
+
+template <Numeric T> T Status<T>::GetResults() { return std::get<T>(_data->GetFuture()); }
+
+template <Numeric T> std::future<T> Status<T>::GetFuture() { return _data->GetFuture(); }
+
+template <Numeric T> Status<T>::~Status() { delete _data; }
+
+void ZetaSession::SubmitTask(BaseJob &task) { pool.QueueJob(task); }
 bool ZetaSession::Busy() { return pool.Busy(); }
 void ZetaSession::StartPool() { pool.Start(); }
 void ZetaSession::ShutdownPool() { pool.Stop(); }
