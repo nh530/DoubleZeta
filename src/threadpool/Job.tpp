@@ -357,8 +357,36 @@ JobArr<N>::JobArr(N (*func_ptr)(const N *, const int *), N *arg1, const int _len
 }
 
 template <int_or_float N>
+JobArr<N>::JobArr(N *(*func_ptr)(const N *, const int *), N *arg1, const int _len_args1)
+    : _args{new N[_len_args1]}, _args2{NULL}, _len1{_len_args1}, _len2{-1},
+      _func_ptr_arr{new std::packaged_task<N *(const N *, const int *)>(*func_ptr)} {
+  // constructor for functions with array parameter.
+  // _args and _args2 are allocated on Heap memory and the value stored in *arg1 address is copied.
+  // _len1 is allocated on the stack. -1 is sentinal value for Null.
+  for (int i = 0; i < _len1; i++) {
+    _args[i] = arg1[i];
+  }
+}
+
+template <int_or_float N>
 JobArr<N>::JobArr(N (*func_ptr)(const N *, const N *, const int *, const int *), N *arg1, N *arg2, const int _len_args1, const int _len_args2)
-    : _args{new N[_len_args1]}, _args2{new N[_len_args2]}, _len1{_len_args1}, _len2{_len_args2}, _func_ptr_2_args{new std::packaged_task<N(const N *, const N *, const int *, const int *)>(*func_ptr)} {
+    : _args{new N[_len_args1]}, _args2{new N[_len_args2]}, _len1{_len_args1}, _len2{_len_args2},
+      _func_ptr_2_args{new std::packaged_task<N(const N *, const N *, const int *, const int *)>(*func_ptr)} {
+  // constructor for functions with array parameter.
+  // _args and _args2 are allocated on Heap memory and the value stored in *arg1 address is copied.
+  // _len1 is allocated on the stack.
+  for (int i = 0; i < _len1; i++) {
+    _args[i] = arg1[i];
+  }
+  for (int i = 0; i < _len2; i++) {
+    _args2[i] = arg2[i];
+  }
+}
+
+template <int_or_float N>
+JobArr<N>::JobArr(N *(*func_ptr)(const N *, const N *, const int *, const int *), N *arg1, N *arg2, const int _len_args1, const int _len_args2)
+    : _args{new N[_len_args1]}, _args2{new N[_len_args2]}, _len1{_len_args1}, _len2{_len_args2},
+      _func_ptr_2_args_arr{new std::packaged_task<N *(const N *, const N *, const int *, const int *)>(*func_ptr)} {
   // constructor for functions with array parameter.
   // _args and _args2 are allocated on Heap memory and the value stored in *arg1 address is copied.
   // _len1 is allocated on the stack.
@@ -382,7 +410,43 @@ template <int_or_float N> JobArr<N>::~JobArr() {
   // Don't need to release packaged_task pointers. Forgot why
 }
 
-template <int_or_float T> JobArr<T>::JobArr(JobArr<T> &&other) : _len1{other._len1}, _len2{other._len2} {
+template <int_or_float T>
+JobArr<T>::JobArr(T (*func_ptr)(const T *, const int *, const int *), T *arg1, int _len_args1, int c)
+    : _func_ptr_c_i{new std::packaged_task<T(const T *, const int *, const int *)>(*func_ptr)}, _args{new T[_len_args1]}, _args2{NULL},
+      _len1{_len_args1}, _len2{-1}, c_i{c}, c_f{0} {
+  for (int i = 0; i < _len1; i++) {
+    _args[i] = arg1[i];
+  }
+}
+
+template <int_or_float T>
+JobArr<T>::JobArr(T *(*func_ptr)(const T *, const int *, const int *), T *arg1, int _len_args1, int c)
+    : _func_ptr_c_i_arr{new std::packaged_task<T *(const T *, const int *, const int *)>(*func_ptr)}, _args{new T[_len_args1]}, _args2{NULL},
+      _len1{_len_args1}, _len2{-1}, c_i{c}, c_f{0} {
+  for (int i = 0; i < _len1; i++) {
+    _args[i] = arg1[i];
+  }
+}
+
+template <int_or_float T>
+JobArr<T>::JobArr(T (*func_ptr)(const T *, const int *, const float *), T *arg1, int _len_args1, float c)
+    : _func_ptr_c_f{new std::packaged_task<T(const T *, const int *, const float *)>(*func_ptr)}, _args{new T[_len_args1]}, _args2{NULL},
+      _len1{_len_args1}, _len2{-1}, c_f{c}, c_i{0} {
+  for (int i = 0; i < _len1; i++) {
+    _args[i] = arg1[i];
+  }
+}
+
+template <int_or_float T>
+JobArr<T>::JobArr(T *(*func_ptr)(const T *, const int *, const float *), T *arg1, int _len_args1, float c)
+    : _func_ptr_c_f_arr{new std::packaged_task<T *(const T *, const int *, const float *)>(*func_ptr)}, _args{new T[_len_args1]}, _args2{NULL},
+      _len1{_len_args1}, _len2{-1}, c_f{c}, c_i{0} {
+  for (int i = 0; i < _len1; i++) {
+    _args[i] = arg1[i];
+  }
+}
+
+template <int_or_float T> JobArr<T>::JobArr(JobArr<T> &&other) : _len1{other._len1}, _len2{other._len2}, c_i{other.c_i}, c_f{other.c_f} {
   // Move constructor.
   if (other._args != NULL) {
     _args = new T[other._len1];
@@ -398,23 +462,59 @@ template <int_or_float T> JobArr<T>::JobArr(JobArr<T> &&other) : _len1{other._le
     }
   } else
     _args2 = NULL;
-  if (other._func_ptr != NULL)
+  if (other._func_ptr)
     _func_ptr = std::move(other._func_ptr);
   else
     _func_ptr = NULL;
-  if (other._func_ptr_no_args != NULL)
+  if (other._func_ptr_no_args)
     _func_ptr_no_args = std::move(other._func_ptr_no_args);
   else
     _func_ptr_no_args = NULL;
-  if (other._func_ptr_2_args != NULL)
+  if (other._func_ptr_2_args)
     _func_ptr_2_args = std::move(other._func_ptr_2_args);
   else
     _func_ptr_2_args = NULL;
+  if (other._func_ptr_c_i)
+    _func_ptr_c_i = std::move(other._func_ptr_c_i);
+  else
+    _func_ptr_c_i = NULL;
+  if (other._func_ptr_c_f)
+    _func_ptr_c_f = std::move(other._func_ptr_c_f);
+  else
+    _func_ptr_c_f = NULL;
+  if (other._func_ptr_arr)
+    _func_ptr_arr = std::move(other._func_ptr_arr);
+  else
+    _func_ptr_arr = NULL;
+  if (other._func_ptr_2_args_arr)
+    _func_ptr_2_args_arr = std::move(other._func_ptr_2_args_arr);
+  else
+    _func_ptr_2_args_arr = NULL;
+  if (other._func_ptr_c_i_arr)
+    _func_ptr_c_i_arr = std::move(other._func_ptr_c_i_arr);
+  else
+    _func_ptr_c_i_arr = NULL;
+  if (other._func_ptr_c_f_arr)
+    _func_ptr_c_f_arr = std::move(other._func_ptr_c_f_arr);
+  else
+    _func_ptr_c_f_arr = NULL;
+  if (other._func_ptr_no_args_arr)
+    _func_ptr_no_args_arr = std::move(other._func_ptr_no_args_arr);
+  else
+    _func_ptr_no_args_arr = NULL;
 
   other._func_ptr = NULL;
   other._func_ptr_2_args = NULL;
   other._func_ptr_no_args = NULL;
+  other._func_ptr_c_i = NULL;
+  other._func_ptr_c_f = NULL;
+  other._func_ptr_arr = NULL;
+  other._func_ptr_2_args_arr = NULL;
+  other._func_ptr_c_i_arr = NULL;
+  other._func_ptr_c_f_arr = NULL;
+  other._func_ptr_no_args_arr = NULL;
 }
+
 template <int_or_float T> JobArr<T> &JobArr<T>::operator=(JobArr<T> &&other) {
   /* Move assignment
    * */
@@ -423,6 +523,8 @@ template <int_or_float T> JobArr<T> &JobArr<T>::operator=(JobArr<T> &&other) {
   // Override original _len1 and _len2
   _len1 = other._len1;
   _len2 = other._len2;
+  c_i = other.c_i;
+  c_f = other.c_f;
 
   if (other._args != NULL) {
     _args = new T[other._len1];
@@ -450,10 +552,45 @@ template <int_or_float T> JobArr<T> &JobArr<T>::operator=(JobArr<T> &&other) {
     _func_ptr_2_args = std::move(other._func_ptr_2_args);
   else
     _func_ptr_2_args = NULL;
+  if (other._func_ptr_c_i)
+    _func_ptr_c_i = std::move(other._func_ptr_c_i);
+  else
+    _func_ptr_c_i = NULL;
+  if (other._func_ptr_c_f)
+    _func_ptr_c_f = std::move(other._func_ptr_c_f);
+  else
+    _func_ptr_c_f = NULL;
+  if (other._func_ptr_arr)
+    _func_ptr_arr = std::move(other._func_ptr_arr);
+  else
+    _func_ptr_arr = NULL;
+  if (other._func_ptr_2_args_arr)
+    _func_ptr_2_args_arr = std::move(other._func_ptr_2_args_arr);
+  else
+    _func_ptr_2_args_arr = NULL;
+  if (other._func_ptr_c_i_arr)
+    _func_ptr_c_i_arr = std::move(other._func_ptr_c_i_arr);
+  else
+    _func_ptr_c_i_arr = NULL;
+  if (other._func_ptr_c_f_arr)
+    _func_ptr_c_f_arr = std::move(other._func_ptr_c_f_arr);
+  else
+    _func_ptr_c_f_arr = NULL;
+  if (other._func_ptr_no_args_arr)
+    _func_ptr_no_args_arr = std::move(other._func_ptr_no_args_arr);
+  else
+    _func_ptr_no_args_arr = NULL;
 
   other._func_ptr = NULL;
   other._func_ptr_2_args = NULL;
   other._func_ptr_no_args = NULL;
+  other._func_ptr_c_f = NULL;
+  other._func_ptr_c_i = NULL;
+  other._func_ptr_arr = NULL;
+  other._func_ptr_2_args_arr = NULL;
+  other._func_ptr_c_i_arr = NULL;
+  other._func_ptr_c_f_arr = NULL;
+  other._func_ptr_no_args_arr = NULL;
 
   return *this;
 }
@@ -488,8 +625,23 @@ template <int_or_float T> void JobArr<T>::Run() {
     (*_func_ptr_2_args)(_args, _args2, &_len1, &_len2);
   } else if (_func_ptr) {
     (*_func_ptr)(_args, &_len1);
-  } else if (_func_ptr_no_args)
+  } else if (_func_ptr_no_args) {
     (*_func_ptr_no_args)();
+  } else if (_func_ptr_c_i) {
+    (*_func_ptr_c_i)(_args, &_len1, &c_i);
+  } else if (_func_ptr_c_f) {
+    (*_func_ptr_c_f)(_args, &_len1, &c_f);
+  } else if (_func_ptr_arr) {
+    (*_func_ptr_arr)(_args, &_len1);
+  } else if (_func_ptr_2_args_arr) {
+    (*_func_ptr_2_args_arr)(_args, _args2, &_len1, &_len2);
+  } else if (_func_ptr_c_i_arr) {
+    (*_func_ptr_c_i_arr)(_args, &_len1, &c_i);
+  } else if (_func_ptr_c_f_arr) {
+    (*_func_ptr_c_f_arr)(_args, &_len1, &c_f);
+  } else if (_func_ptr_no_args_arr) {
+    (*_func_ptr_no_args_arr)();
+  }
 }
 
 template <int_or_float T> std::future<T> JobArr<T>::GetFuture() {
@@ -499,10 +651,78 @@ template <int_or_float T> std::future<T> JobArr<T>::GetFuture() {
     return _func_ptr_2_args->get_future();
   } else if (_func_ptr) {
     return _func_ptr->get_future();
-  } else if (_func_ptr_no_args)
+  } else if (_func_ptr_no_args) {
     return _func_ptr_no_args->get_future();
-  else
+  } else if (_func_ptr_c_i) {
+    return _func_ptr_c_i->get_future();
+  } else if (_func_ptr_c_f) {
+    return _func_ptr_c_f->get_future();
+  } else
     throw std::runtime_error("Error! Cannot get std::future<T> object because there is no function to be executed.");
+}
+
+template <int_or_float T> std::future<T *> JobArr<T>::GetFuturePtr() {
+  /* Returns a future object associated with this Job instance.
+   * */
+  if (_func_ptr_2_args_arr) {
+    return _func_ptr_2_args_arr->get_future();
+  } else if (_func_ptr_arr) {
+    return _func_ptr_arr->get_future();
+  } else if (_func_ptr_no_args_arr) {
+    return _func_ptr_no_args_arr->get_future();
+  } else if (_func_ptr_c_i_arr) {
+    return _func_ptr_c_i_arr->get_future();
+  } else if (_func_ptr_c_f_arr) {
+    return _func_ptr_c_f_arr->get_future();
+  } else
+    throw std::runtime_error("Error! Cannot get std::future<T> object because there is no function to be executed.");
+}
+
+template <int_or_float T> int JobArr<T>::_debug_func() {
+  if (_func_ptr_2_args) {
+    return 1;
+  } else if (_func_ptr) {
+    return 2;
+  } else if (_func_ptr_no_args) {
+    return 3;
+  } else if (_func_ptr_c_i) {
+    return 4;
+  } else if (_func_ptr_c_f) {
+    return 5;
+  } else if (_func_ptr_2_args_arr) {
+    return 6;
+  } else if (_func_ptr_arr) {
+    return 7;
+  } else if (_func_ptr_no_args_arr) {
+    return 8;
+  } else if (_func_ptr_c_i_arr) {
+    return 9;
+  } else if (_func_ptr_c_f_arr) {
+    return 10;
+  } else
+    return 0;
+}
+
+template <Numeric T> int Job<T>::_debug_func() {
+  if (_func_ptr_2_args) {
+    return 1;
+  } else if (_func_ptr) {
+    return 2;
+  } else if (_func_ptr_no_args) {
+    return 3;
+  } else
+    return 0;
+}
+
+int Job<NumericVariant>::_debug_func() {
+  if (_func_ptr_2_args) {
+    return 1;
+  } else if (_func_ptr) {
+    return 2;
+  } else if (_func_ptr_no_args) {
+    return 3;
+  } else
+    return 0;
 }
 
 #endif

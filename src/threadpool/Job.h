@@ -33,6 +33,7 @@ public:
   std::future<T> GetFuture();
   T GetArg1();
   T GetArg2();
+  int _debug_func(); // Method is for testing purposes only; Not for end-users; Used for unit testing
 
 private:
   std::packaged_task<T(const T *, const T *)> *_func_ptr_2_args = NULL;
@@ -45,9 +46,16 @@ private:
 template <int_or_float T> class JobArr : public BaseJob {
 public:
   JobArr();
+  JobArr(T (*func_ptr)());  // TODO: not implemented yet.
+  JobArr(T *(*func_ptr)()); // TODO: not implemented yet.
   JobArr(T (*func_ptr)(const T *, const int *), T *arg1, int _len_args1);
-	JobArr(T (*func_ptr)(const T *, const int *, const int *), T *arg1, int _len_args1, int c);
+  JobArr(T *(*func_ptr)(const T *, const int *), T *arg1, int _len_args1);
+  JobArr(T (*func_ptr)(const T *, const int *, const int *), T *arg1, int _len_args1, int c);
+  JobArr(T *(*func_ptr)(const T *, const int *, const int *), T *arg1, int _len_args1, int c);
+  JobArr(T (*func_ptr)(const T *, const int *, const float *), T *arg1, int _len_args1, float c);
+  JobArr(T *(*func_ptr)(const T *, const int *, const float *), T *arg1, int _len_args1, float c);
   JobArr(T (*func_ptr)(const T *, const T *, const int *, const int *), T *arg1, T *arg2, int _len_args1, int _len_args2);
+  JobArr(T *(*func_ptr)(const T *, const T *, const int *, const int *), T *arg1, T *arg2, int _len_args1, int _len_args2);
   JobArr(JobArr<T> &other) = delete;
   JobArr &operator=(JobArr<T> &other) = delete;
   JobArr(JobArr<T> &&other);
@@ -55,15 +63,26 @@ public:
   ~JobArr();
   void Run();
   std::future<T> GetFuture();
+  std::future<T *> GetFuturePtr();
   T *GetArg1();
   T *GetArg2();
   int GetLen1();
   int GetLen2();
+  int _debug_func(); // Method is for testing purposes only; Not for end-users. Used for unit testing.
 
 private:
   std::packaged_task<T(const T *, const T *, const int *, const int *)> *_func_ptr_2_args = NULL;
+  std::packaged_task<T *(const T *, const T *, const int *, const int *)> *_func_ptr_2_args_arr = NULL;
   std::packaged_task<T(const T *, const int *)> *_func_ptr = NULL;
+  std::packaged_task<T *(const T *, const int *)> *_func_ptr_arr = NULL;
+  std::packaged_task<T(const T *, const int *, const int *)> *_func_ptr_c_i = NULL;
+  std::packaged_task<T *(const T *, const int *, const int *)> *_func_ptr_c_i_arr = NULL;
+  std::packaged_task<T(const T *, const int *, const float *)> *_func_ptr_c_f = NULL;
+  std::packaged_task<T *(const T *, const int *, const float *)> *_func_ptr_c_f_arr = NULL;
   std::packaged_task<T()> *_func_ptr_no_args = NULL;
+  std::packaged_task<T *()> *_func_ptr_no_args_arr = NULL;
+  int c_i;
+  float c_f;
   T *_args;
   T *_args2;
   int _len1;
@@ -92,6 +111,7 @@ public:
   std::future<NumericVariant> GetFuture();
   NumericVariant GetArg1();
   NumericVariant GetArg2();
+  int _debug_func(); // Method is for testing purposes only; Not for end-users; Used for unit testing.
 
 private:
   std::packaged_task<NumericVariant(const NumericVariant *, const NumericVariant *)> *_func_ptr_2_args = NULL;
