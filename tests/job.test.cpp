@@ -17,11 +17,11 @@ NumericVariant simp_mul(const NumericVariant *a) {
 }
 
 template <Numeric T> T simp_func() { return 100; }
-template <Numeric T> Job<T> *move_func(Job<T> &x) {
+template <Numeric T> Job<T> *move_func(Job<T> &&x) {
   Job<T> *out = new Job(std::move(x));
   return out;
 }
-template <Numeric T> JobArr<T> *move_func(JobArr<T> &x) {
+template <Numeric T> JobArr<T> *move_func(JobArr<T> &&x) {
   JobArr<T> *out = new JobArr(std::move(x));
   return out;
 }
@@ -244,87 +244,87 @@ TEST(Job, move_assignment) {
 
 TEST(Job, move_constr) {
   // Note that this does not test if the function pointer is correctly moved over.
-  int x = 10;
+	int x = 10;
   int y = 20;
   Job<int> test{&simp_add, &x, &y};
-  Job<int> *out = move_func(test);
+  Job<int> *out = move_func(std::move(test));
   EXPECT_EQ((*out).GetArg1(), 10);
   EXPECT_EQ((*out).GetArg2(), 20);
   EXPECT_EQ((*out)._debug_func(), 1);
   float x_f = 10.0;
   float y_f = 20.0;
   Job<float> test2{&simp_add, &x_f, &y_f};
-  Job<float> *out2 = move_func(test2);
+  Job<float> *out2 = move_func(std::move(test2));
   EXPECT_EQ((*out2).GetArg1(), 10.0f);
   EXPECT_EQ((*out2).GetArg2(), 20.0f);
   EXPECT_EQ((*out2)._debug_func(), 1);
   Job<int> test3{&simp_mul, &x};
-  Job<int> *out3 = move_func(test3);
+  Job<int> *out3 = move_func(std::move(test3));
   EXPECT_EQ((*out3).GetArg1(), 10);
   EXPECT_EQ((*out3).GetArg2(), 0);
   EXPECT_EQ((*out3)._debug_func(), 2);
   Job<float> test4{&simp_mul, &x_f};
-  Job<float> *out4 = move_func(test4);
+  Job<float> *out4 = move_func(std::move(test4));
   EXPECT_EQ((*out4).GetArg1(), 10.0f);
   EXPECT_EQ((*out4).GetArg2(), 0);
   EXPECT_EQ((*out4)._debug_func(), 2);
   Job<int> test5{&simp_add, &x, &y};
-  Job<int> *out5 = move_func(test5);
+  Job<int> *out5 = move_func(std::move(test5));
   EXPECT_EQ((*out5).GetArg1(), 10);
   EXPECT_EQ((*out5).GetArg2(), 20);
   EXPECT_EQ((*out5)._debug_func(), 1);
   Job<float> test6{&simp_add, &x_f, &y_f};
-  Job<float> *out6 = move_func(test6);
+  Job<float> *out6 = move_func(std::move(test6));
   EXPECT_EQ((*out6).GetArg1(), 10.0f);
   EXPECT_EQ((*out6).GetArg2(), 20.0f);
   EXPECT_EQ((*out6)._debug_func(), 1);
   Job<int> test7{&simp_func};
-  Job<int> *out7 = move_func(test7);
+  Job<int> *out7 = move_func(std::move(test7));
   EXPECT_EQ((*out7).GetArg1(), 0);
   EXPECT_EQ((*out7).GetArg2(), 0);
   EXPECT_EQ((*out7)._debug_func(), 3);
   Job<float> test8{&simp_func};
-  Job<float> *out8 = move_func(test8);
+  Job<float> *out8 = move_func(std::move(test8));
   EXPECT_EQ((*out8).GetArg1(), 0.0f);
   EXPECT_EQ((*out8).GetArg2(), 0.0f);
   EXPECT_EQ((*out8)._debug_func(), 3);
   Job<int> test9{};
-  Job<int> *out9 = move_func(test9);
+  Job<int> *out9 = move_func(std::move(test9));
   EXPECT_EQ((*out9).GetArg1(), 0);
   EXPECT_EQ((*out9).GetArg2(), 0);
   EXPECT_EQ((*out9)._debug_func(), 0);
   Job<float> test10{};
-  Job<float> *out10 = move_func(test10);
+  Job<float> *out10 = move_func(std::move(test10));
   EXPECT_EQ((*out10).GetArg1(), 0.0f);
   EXPECT_EQ((*out10).GetArg2(), 0.0f);
   EXPECT_EQ((*out10)._debug_func(), 0);
   Job<NumericVariant> test11(&simp_add, &x, &y);
-  Job<NumericVariant> *out11 = move_func(test11);
+  Job<NumericVariant> *out11 = move_func(std::move(test11));
   EXPECT_EQ(std::get<int>((*out11).GetArg1()), 10);
   EXPECT_EQ(std::get<int>((*out11).GetArg2()), 20);
   EXPECT_EQ((*out11)._debug_func(), 1);
   Job<NumericVariant> test12{&simp_mul, &x};
-  Job<NumericVariant> *out12 = move_func(test12);
+  Job<NumericVariant> *out12 = move_func(std::move(test12));
   EXPECT_EQ(std::get<int>((*out12).GetArg1()), 10);
   EXPECT_EQ(std::get<int>((*out12).GetArg2()), 0);
   EXPECT_EQ((*out12)._debug_func(), 2);
   Job<NumericVariant> test13{&simp_func};
-  Job<NumericVariant> *out13 = move_func(test13);
+  Job<NumericVariant> *out13 = move_func(std::move(test13));
   EXPECT_EQ(std::get<int>((*out13).GetArg1()), 0);
   EXPECT_EQ(std::get<int>((*out13).GetArg2()), 0);
   EXPECT_EQ((*out13)._debug_func(), 3);
   Job<NumericVariant> test14(&simp_add, &x_f, &y_f);
-  Job<NumericVariant> *out14 = move_func(test14);
+  Job<NumericVariant> *out14 = move_func(std::move(test14));
   EXPECT_EQ(std::get<float>((*out14).GetArg1()), 10.0f);
   EXPECT_EQ(std::get<float>((*out14).GetArg2()), 20.0f);
   EXPECT_EQ((*out14)._debug_func(), 1);
   Job<NumericVariant> test15{&simp_mul, &x_f};
-  Job<NumericVariant> *out15 = move_func(test15);
+  Job<NumericVariant> *out15 = move_func(std::move(test15));
   EXPECT_EQ(std::get<float>((*out15).GetArg1()), 10.0f);
   EXPECT_EQ(std::get<float>((*out15).GetArg2()), 0.0f);
   EXPECT_EQ((*out15)._debug_func(), 2);
   Job<NumericVariant> test16{&simp_func};
-  Job<NumericVariant> *out16 = move_func(test16);
+  Job<NumericVariant> *out16 = move_func(std::move(test16));
   EXPECT_EQ(std::get<int>((*out16).GetArg1()), 0);
   EXPECT_EQ(std::get<int>((*out16).GetArg2()), 0);
   EXPECT_EQ((*out16)._debug_func(), 3);
@@ -332,17 +332,17 @@ TEST(Job, move_constr) {
   NumericVariant y_n = NumericVariant(20);
 
   Job<NumericVariant> test17(&simp_add, &x_n, &y_n);
-  Job<NumericVariant> *out17 = move_func(test17);
+  Job<NumericVariant> *out17 = move_func(std::move(test17));
   EXPECT_EQ(std::get<int>((*out17).GetArg1()), 10);
   EXPECT_EQ(std::get<int>((*out17).GetArg2()), 20);
   EXPECT_EQ((*out17)._debug_func(), 1);
   Job<NumericVariant> test18{&simp_mul, &x_n};
-  Job<NumericVariant> *out18 = move_func(test18);
+  Job<NumericVariant> *out18 = move_func(std::move(test18));
   EXPECT_EQ(std::get<int>((*out18).GetArg1()), 10);
   EXPECT_EQ(std::get<int>((*out18).GetArg2()), 0);
   EXPECT_EQ((*out18)._debug_func(), 2);
   Job<NumericVariant> test19{&simp_func};
-  Job<NumericVariant> *out19 = move_func(test19);
+  Job<NumericVariant> *out19 = move_func(std::move(test19));
   EXPECT_EQ(std::get<int>((*out19).GetArg1()), 0);
   EXPECT_EQ(std::get<int>((*out19).GetArg2()), 0);
   EXPECT_EQ((*out19)._debug_func(), 3);
@@ -350,22 +350,22 @@ TEST(Job, move_constr) {
   NumericVariant y_f_n = NumericVariant(20.2f);
 
   Job<NumericVariant> test20(&simp_add, &x_f_n, &y_f_n);
-  Job<NumericVariant> *out20 = move_func(test20);
+  Job<NumericVariant> *out20 = move_func(std::move(test20));
   EXPECT_EQ(std::get<float>((*out20).GetArg1()), 10.1f);
   EXPECT_EQ(std::get<float>((*out20).GetArg2()), 20.2f);
   EXPECT_EQ((*out20)._debug_func(), 1);
   Job<NumericVariant> test21{&simp_mul, &x_f_n};
-  Job<NumericVariant> *out21 = move_func(test21);
+  Job<NumericVariant> *out21 = move_func(std::move(test21));
   EXPECT_EQ(std::get<float>((*out21).GetArg1()), 10.1f);
   EXPECT_EQ(std::get<float>((*out21).GetArg2()), 0.0f);
   EXPECT_EQ((*out21)._debug_func(), 2);
   Job<NumericVariant> test22{&simp_func};
-  Job<NumericVariant> *out22 = move_func(test22);
+  Job<NumericVariant> *out22 = move_func(std::move(test22));
   EXPECT_EQ(std::get<int>((*out22).GetArg1()), 0);
   EXPECT_EQ(std::get<int>((*out22).GetArg2()), 0);
   EXPECT_EQ((*out22)._debug_func(), 3);
   Job<NumericVariant> test23 = std::move(Job<NumericVariant>{});
-  Job<NumericVariant> *out23 = move_func(test22);
+  Job<NumericVariant> *out23 = move_func(std::move(test22));
   EXPECT_EQ(std::get<int>((*out23).GetArg1()), 0);
   EXPECT_EQ(std::get<int>((*out23).GetArg2()), 0);
   EXPECT_EQ((*out23)._debug_func(), 0);
@@ -827,7 +827,7 @@ TEST(JobArr, move_constructor) {
   int d = 10;
 
   JobArr<int> test{&simp_add_n, x, d};
-  JobArr<int> *out = move_func(test);
+  JobArr<int> *out = move_func(std::move(test));
   auto res = (*out).GetArg1();
   for (int i = 0; i < d; i++) {
     EXPECT_EQ(res[i], x[i]);
@@ -835,7 +835,7 @@ TEST(JobArr, move_constructor) {
   EXPECT_EQ((*out).GetArg2(), nullptr);
   EXPECT_EQ((*out)._debug_func(), 2);
   JobArr<float> test2{&simp_add_n, y, d};
-  JobArr<float> *out2 = move_func(test2);
+  JobArr<float> *out2 = move_func(std::move(test2));
   auto res2 = (*out2).GetArg1();
   for (int i = 0; i < d; i++) {
     EXPECT_EQ(res2[i], y[i]);
@@ -843,7 +843,7 @@ TEST(JobArr, move_constructor) {
   EXPECT_EQ((*out2).GetArg2(), nullptr);
   EXPECT_EQ((*out2)._debug_func(), 2);
   JobArr<int> test3{&ele_add_n, x, x, d, d};
-  JobArr<int> *out3 = move_func(test3);
+  JobArr<int> *out3 = move_func(std::move(test3));
   auto res3 = (*out3).GetArg1();
   EXPECT_EQ((*out3)._debug_func(), 1);
   for (int i = 0; i < d; i++) {
@@ -854,7 +854,7 @@ TEST(JobArr, move_constructor) {
     EXPECT_EQ(res4[i], x[i]);
   }
   JobArr<float> test4{&ele_add_n, y, y, d, d};
-  JobArr<float> *out4 = move_func(test4);
+  JobArr<float> *out4 = move_func(std::move(test4));
   auto res5 = (*out4).GetArg1();
   for (int i = 0; i < d; i++) {
     EXPECT_EQ(res5[i], y[i]);
@@ -865,12 +865,12 @@ TEST(JobArr, move_constructor) {
   }
   EXPECT_EQ((*out4)._debug_func(), 1);
   JobArr<int> test5{};
-  JobArr<int> *out5 = move_func(test5);
+  JobArr<int> *out5 = move_func(std::move(test5));
   EXPECT_EQ((*out5).GetArg1(), nullptr);
   EXPECT_EQ((*out5).GetArg2(), nullptr);
   EXPECT_EQ((*out5)._debug_func(), 0);
   JobArr<float> test6{};
-  JobArr<float> *out6 = move_func(test6);
+  JobArr<float> *out6 = move_func(std::move(test6));
   EXPECT_EQ((*out6).GetArg1(), nullptr);
   EXPECT_EQ((*out6).GetArg2(), nullptr);
   EXPECT_EQ((*out6)._debug_func(), 0);
@@ -878,7 +878,7 @@ TEST(JobArr, move_constructor) {
   int cons = 2;
   float cons_f = 2.125;
   JobArr<int> test7{&scalar_add_n, x, d, cons};
-  JobArr<int> *out7 = move_func(test7);
+  JobArr<int> *out7 = move_func(std::move(test7));
   auto *res7 = (*out7).GetArg1();
   for (int i = 0; i < 10; i++) {
     EXPECT_EQ(res7[i], x[i]);
@@ -888,7 +888,7 @@ TEST(JobArr, move_constructor) {
   EXPECT_EQ((*out7).GetLen2(), -1);
   EXPECT_EQ((*out7)._debug_func(), 4);
   JobArr<float> test8{&scalar_add_n, y, d, cons_f};
-  JobArr<float> *out8 = move_func(test8);
+  JobArr<float> *out8 = move_func(std::move(test8));
   auto *res8 = (*out8).GetArg1();
   for (int i = 0; i < 10; i++) {
     EXPECT_EQ(res8[i], y[i]);
@@ -898,7 +898,7 @@ TEST(JobArr, move_constructor) {
   EXPECT_EQ((*out8).GetLen2(), -1);
   EXPECT_EQ((*out8)._debug_func(), 5);
   JobArr<int> test9{&scalar_add_arr, x, d, cons};
-  JobArr<int> *out9 = move_func(test9);
+  JobArr<int> *out9 = move_func(std::move(test9));
   auto *res9 = (*out9).GetArg1();
   for (int i = 0; i < 10; i++) {
     EXPECT_EQ(res9[i], x[i]);
@@ -908,7 +908,7 @@ TEST(JobArr, move_constructor) {
   EXPECT_EQ((*out9).GetLen2(), -1);
   EXPECT_EQ((*out9)._debug_func(), 9);
   JobArr<float> test10{&scalar_add_arr, y, d, cons_f};
-  JobArr<float> *out10 = move_func(test10);
+  JobArr<float> *out10 = move_func(std::move(test10));
   auto *res10 = (*out10).GetArg1();
   for (int i = 0; i < 10; i++) {
     EXPECT_EQ(res10[i], y[i]);
@@ -918,7 +918,7 @@ TEST(JobArr, move_constructor) {
   EXPECT_EQ((*out10).GetLen2(), -1);
   EXPECT_EQ((*out10)._debug_func(), 10);
   JobArr<int> test11 = JobArr<int>{&ele_add_arr, x, x, d, d};
-  JobArr<int> *out11 = move_func(test11);
+  JobArr<int> *out11 = move_func(std::move(test11));
   auto *res11 = (*out11).GetArg1();
   auto *res12 = (*out11).GetArg2();
   for (int i = 0; i < 10; i++) {
@@ -929,7 +929,7 @@ TEST(JobArr, move_constructor) {
   EXPECT_EQ((*out11).GetLen2(), 10);
   EXPECT_EQ((*out11)._debug_func(), 6);
   JobArr<float> test12 = JobArr<float>{&ele_add_arr, y, y, d, d};
-  JobArr<float> *out12 = move_func(test12);
+  JobArr<float> *out12 = move_func(std::move(test12));
   auto *res13 = (*out12).GetArg1();
   auto *res14 = (*out12).GetArg2();
   for (int i = 0; i < 10; i++) {
@@ -940,7 +940,7 @@ TEST(JobArr, move_constructor) {
   EXPECT_EQ((*out12).GetLen2(), 10);
   EXPECT_EQ((*out12)._debug_func(), 6);
   JobArr<int> test13 = JobArr<int>{&simp_add_arr, x, d};
-  JobArr<int> *out13 = move_func(test13);
+  JobArr<int> *out13 = move_func(std::move(test13));
   auto *res15 = (*out13).GetArg1();
   for (int i = 0; i < 10; i++) {
     EXPECT_EQ(res15[i], x[i]);
@@ -950,7 +950,7 @@ TEST(JobArr, move_constructor) {
   EXPECT_EQ((*out13).GetLen2(), -1);
   EXPECT_EQ((*out13)._debug_func(), 7);
   JobArr<float> test14 = JobArr<float>{&simp_add_arr, y, d};
-  JobArr<float> *out14 = move_func(test14);
+  JobArr<float> *out14 = move_func(std::move(test14));
   auto *res16 = (*out14).GetArg1();
   for (int i = 0; i < 10; i++) {
     EXPECT_EQ(res16[i], y[i]);
