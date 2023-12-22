@@ -1,4 +1,5 @@
 #include "Matrix.h"
+#include "typing/exceptions.h"
 #include <iostream>
 float _vector_dotproduct(std::vector<float> left, std::vector<float> right) {
   /* Computes the dot product of two vectors that are the same size.
@@ -18,9 +19,17 @@ float _vector_dotproduct(std::vector<float> left, std::vector<float> right) {
 
   return out;
 }
+
+Matrix::Matrix() {
+  // Default constructor; Initialize nothing.
+}
 Matrix::Matrix(int rows, int cols, float def_val) : _rows{rows}, _cols{cols} {
   // Defaults value implicit from header file.
   // # TODO: throw error if pass 0 rows 0 cols.
+  if (rows == 0)
+    throw std::invalid_argument("The number of rows cannot be 0!");
+  if (cols == 0)
+    throw std::invalid_argument("The number of columns canot be 0!");
   shape[0] = _rows;
   shape[1] = _cols;
   for (int i = 0; i < _rows; i++) {
@@ -32,6 +41,11 @@ Matrix::Matrix(int rows, int cols, float def_val) : _rows{rows}, _cols{cols} {
   }
 }
 Matrix::Matrix(float **array, int rows, int cols) : _rows{rows}, _cols{cols} { // Pass by reference to 2-d array
+  if (rows == 0)
+    throw std::invalid_argument("The number of rows cannot be 0!");
+  if (cols == 0)
+    throw std::invalid_argument("The number of columns canot be 0!");
+
   for (int i = 0; i < rows; i++) {
     float *temp = new float[cols]{0};
     _container.push_back(temp);
@@ -39,8 +53,6 @@ Matrix::Matrix(float **array, int rows, int cols) : _rows{rows}, _cols{cols} { /
       _container[i][j] = array[i][j];
     }
   }
-  _rows = rows;
-  _cols = cols;
   shape[0] = _rows;
   shape[1] = _cols;
 }
@@ -137,6 +149,7 @@ const std::vector<float> Matrix::getColumn(int j) const {
   return out;
 }
 Matrix operator+(const Matrix &a, const Matrix &b) {
+  // Element-wise add two matrices.
   if (a.shape[0] != b.shape[0] || a.shape[1] != b.shape[1]) {
     throw std::invalid_argument("Shape mismatch between left and right Matrices");
   }
@@ -152,7 +165,8 @@ Matrix operator+(const Matrix &a, const Matrix &b) {
   return out;
 }
 Matrix operator-(const Matrix &a, const Matrix &b) {
-  if (a.shape[0] != b.shape[0] && a.shape[1] != b.shape[1]) {
+  // Element-wise subtract two matrices.
+  if (a.shape[0] != b.shape[0] || a.shape[1] != b.shape[1]) {
     throw std::invalid_argument("Shape mismatch between left and right Matrices");
   }
   if (a.shape[0] == 0 && a.shape[1] == 0) {
@@ -168,7 +182,9 @@ Matrix operator-(const Matrix &a, const Matrix &b) {
 }
 
 Matrix operator*(const Matrix &a, const Matrix &b) {
-  /* It is possible to return a 1x1 Matrix. Dot product of 2 vectors represented as matrices will return 1x1 matrix that should be a scalar.
+  /* Dot product. This is not element-wise multiplication.
+   * It is possible to return a 1x1 Matrix. Dot product of 2 vectors
+   * represented as matrices will return 1x1 matrix that should be a scalar.
    *
    * */
   if (a.shape[1] != b.shape[0]) {
@@ -194,6 +210,7 @@ Matrix operator*(const Matrix &a, const Matrix &b) {
 }
 
 Matrix operator*(const int &a, const Matrix &b) {
+  // Multiply the matrice by a scalar a.
   if (b.shape[0] == 0 && b.shape[1] == 0) {
     return Matrix{0, 0}; // empty matrix
   }
@@ -211,6 +228,7 @@ Matrix operator*(const int &a, const Matrix &b) {
   return out;
 }
 Matrix operator*(const float &a, const Matrix &b) {
+  // Multiply the matrice by a scalar a.
   if (b.shape[0] == 0 && b.shape[1] == 0) {
     return Matrix{0, 0}; // empty matrix
   }
@@ -227,6 +245,8 @@ Matrix operator*(const float &a, const Matrix &b) {
 
   return out;
 }
+Matrix operator*(const Matrix &b, const int &a) { return a * b; }
+Matrix operator*(const Matrix &b, const float &a) { return a * b; }
 bool operator==(const Matrix &a, const Matrix &b) {
   // TODO: Floating point comparison is slow.
   if (a.shape[0] != b.shape[0] && a.shape[1] != b.shape[1]) {
@@ -261,12 +281,34 @@ bool operator!=(const Matrix &a, const Matrix &b) {
 }
 
 Matrix Matrix::operator+=(const Matrix other) {
-  Matrix out{other._rows, other._cols};
-  return *this + out;
+  if ((*this).shape[0] != other.shape[0] || (*this).shape[1] != other.shape[1]) {
+    throw std::invalid_argument("Shape mismatch between left and right Matrices");
+  }
+  if ((*this).shape[0] == 0 && (*this).shape[1] == 0) {
+    return *this;
+  }
+
+  for (int i = 0; i < (*this).shape[0]; i++) {
+    for (int j = 0; j < (*this).shape[1]; j++) {
+      (*this)[i][j] = (*this)[i][j] + other[i][j];
+    }
+  }
+  return *this;
 }
 Matrix Matrix::operator-=(const Matrix other) {
-  Matrix out{other._rows, other._cols};
-  return *this - out;
+  if ((*this).shape[0] != other.shape[0] || (*this).shape[1] != other.shape[1]) {
+    throw std::invalid_argument("Shape mismatch between left and right Matrices");
+  }
+  if ((*this).shape[0] == 0 && (*this).shape[1] == 0) {
+    return *this;
+  }
+
+  for (int i = 0; i < (*this).shape[0]; i++) {
+    for (int j = 0; j < (*this).shape[1]; j++) {
+      (*this)[i][j] = (*this)[i][j] - other[i][j];
+    }
+  }
+  return *this;
 }
 Matrix Matrix::transpose() {
   Matrix out(_cols, _rows);
