@@ -18,3 +18,4 @@ The __AVX2__ preprocessor symbol is defined when the /arch:AVX2 or /arch:AVX512 
 
 # References
 - https://stackoverflow.com/questions/16348909/how-do-i-know-if-i-can-compile-with-fma-instruction-sets#:~:text=To%20reliably%20detect%20FMA%20(or,macro%20for%20AMD%20FMA4%20support.
+- https://stackoverflow.com/questions/18868235/preventing-gcc-from-automatically-using-avx-and-fma-instructions-when-compiled-w
