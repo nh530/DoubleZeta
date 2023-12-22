@@ -3,12 +3,6 @@
 #include <iostream>
 #include <stdexcept>
 #include <vector>
-/* Notes:
- * TODO: Not fully tested
- * Use EXPECT_FLOAT_EQ or EXPECT_NEAR assertion when testing the any math operation that is done on floats, for example addition or multiplication,
- * as there is rounding error that occurs.
- *
- * */
 
 TEST(MatrixTest, instantiation) {
   Matrix mat1 = Matrix(3, 1);
@@ -286,7 +280,124 @@ TEST(MatrixTest, operator_transpose) {
   EXPECT_THROW(res2[4], std::invalid_argument);
 }
 
-TEST(MatrixTest, copy_constructor){
-	// TODO:
+TEST(MatrixTest, move_assignment) {
+  Matrix test1 = std::move(Matrix(4, 4));
+  EXPECT_EQ(test1.shape[0], 4);
+  EXPECT_EQ(test1.shape[1], 4);
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
+      EXPECT_EQ(test1[i][j], 0);
+    }
+  }
+  float *row1 = new float[1]{1.0};
+  float *row2 = new float[1]{2.5};
+  float *row3 = new float[1]{4.125};
+  float *row4 = new float[1]{1.0};
+  float **arr = new float *[4];
+  arr[0] = row1;
+  arr[1] = row2;
+  arr[2] = row3;
+  arr[3] = row4;
+  Matrix test2 = std::move(Matrix{arr, 4, 1});
+  EXPECT_EQ(test2.shape[0], 4);
+  EXPECT_EQ(test2.shape[1], 1);
+  EXPECT_EQ(test2[0][0], 1.0);
+  EXPECT_EQ(test2[1][0], 2.5);
+  EXPECT_EQ(test2[2][0], 4.125);
+  EXPECT_EQ(test2[3][0], 1.0);
+}
 
+Matrix *move_func(Matrix &&x) {
+  Matrix *out = new Matrix(std::move(x));
+  return out;
+}
+
+Matrix *copy_func(const Matrix &x) {
+  Matrix *out = new Matrix(x);
+  return out;
+}
+
+TEST(MatrixTest, move_constructor) {
+  Matrix *test1 = move_func(std::move(Matrix(4, 4)));
+  EXPECT_EQ((*test1).shape[0], 4);
+  EXPECT_EQ((*test1).shape[1], 4);
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
+      EXPECT_EQ((*test1)[i][j], 0);
+    }
+  }
+  float *row1 = new float[1]{1.0};
+  float *row2 = new float[1]{2.5};
+  float *row3 = new float[1]{4.125};
+  float *row4 = new float[1]{1.0};
+  float **arr = new float *[4];
+  arr[0] = row1;
+  arr[1] = row2;
+  arr[2] = row3;
+  arr[3] = row4;
+  Matrix *test2 = move_func(std::move(Matrix{arr, 4, 1}));
+  EXPECT_EQ(test2->shape[0], 4);
+  EXPECT_EQ(test2->shape[1], 1);
+  EXPECT_EQ((*test2)[0][0], 1.0);
+  EXPECT_EQ((*test2)[1][0], 2.5);
+  EXPECT_EQ((*test2)[2][0], 4.125);
+  EXPECT_EQ((*test2)[3][0], 1.0);
+  delete test1;
+  delete test2;
+}
+
+TEST(MatrixTest, copy_constructor) {
+  Matrix *test1 = copy_func(Matrix{4, 4});
+  EXPECT_EQ((*test1).shape[0], 4);
+  EXPECT_EQ((*test1).shape[1], 4);
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
+      EXPECT_EQ((*test1)[i][j], 0);
+    }
+  }
+  float *row1 = new float[1]{1.0};
+  float *row2 = new float[1]{2.5};
+  float *row3 = new float[1]{4.125};
+  float *row4 = new float[1]{1.0};
+  float **arr = new float *[4];
+  arr[0] = row1;
+  arr[1] = row2;
+  arr[2] = row3;
+  arr[3] = row4;
+  Matrix *test2 = copy_func(Matrix{arr, 4, 1});
+  EXPECT_EQ(test2->shape[0], 4);
+  EXPECT_EQ(test2->shape[1], 1);
+  EXPECT_EQ((*test2)[0][0], 1.0);
+  EXPECT_EQ((*test2)[1][0], 2.5);
+  EXPECT_EQ((*test2)[2][0], 4.125);
+  EXPECT_EQ((*test2)[3][0], 1.0);
+  delete test1;
+  delete test2;
+}
+
+TEST(MatrixTest, copy_assignment) {
+  Matrix test1 = Matrix(4, 4);
+  EXPECT_EQ(test1.shape[0], 4);
+  EXPECT_EQ(test1.shape[1], 4);
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
+      EXPECT_EQ(test1[i][j], 0);
+    }
+  }
+  float *row1 = new float[1]{1.0};
+  float *row2 = new float[1]{2.5};
+  float *row3 = new float[1]{4.125};
+  float *row4 = new float[1]{1.0};
+  float **arr = new float *[4];
+  arr[0] = row1;
+  arr[1] = row2;
+  arr[2] = row3;
+  arr[3] = row4;
+  Matrix test2 = Matrix{arr, 4, 1};
+  EXPECT_EQ(test2.shape[0], 4);
+  EXPECT_EQ(test2.shape[1], 1);
+  EXPECT_EQ(test2[0][0], 1.0);
+  EXPECT_EQ(test2[1][0], 2.5);
+  EXPECT_EQ(test2[2][0], 4.125);
+  EXPECT_EQ(test2[3][0], 1.0);
 }
