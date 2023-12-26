@@ -148,6 +148,201 @@ template <Numeric T> T Job<T>::GetArg2() {
     return 0;
 }
 
+template <Numeric T> JobNoParam<T>::JobNoParam(T (*func_ptr)()) : _func_ptr_no_args{new std::packaged_task<T()>(*func_ptr)} {
+  // int or float constructor for no parameter functions.
+}
+template <Numeric T> JobNoParam<T>::JobNoParam() : _func_ptr_no_args{NULL} {
+  // Default constructor for int and float template types.
+}
+template <Numeric T> void JobNoParam<T>::Run() {
+  // Executes function and pass in arguments.
+  // Null args should silently Run and do nothing.
+  (*_func_ptr_no_args)();
+}
+
+template <Numeric T> std::future<T> JobNoParam<T>::GetFuture() {
+  /* Returns a future object associated with this Job instance.
+   * */
+  if (_func_ptr_no_args)
+    return _func_ptr_no_args->get_future();
+  else
+    throw std::runtime_error("Error! Cannot get std::future<T> object because there is no function to be executed.");
+}
+
+template <Numeric N> JobNoParam<N>::~JobNoParam() {
+  // Destructor
+  // Don't need to release packaged_task pointers. Forgot why
+}
+
+template <Numeric T> JobNoParam<T>::JobNoParam(JobNoParam<T> &&other) {
+  // Move constructor.
+  if (other._func_ptr_no_args != NULL)
+    _func_ptr_no_args = std::move(other._func_ptr_no_args);
+  else
+    _func_ptr_no_args = NULL;
+
+  other._func_ptr_no_args = NULL;
+}
+
+template <Numeric T> JobNoParam<T> &JobNoParam<T>::operator=(JobNoParam<T> &&other) {
+  /* Move assignment
+   * */
+  if (other._func_ptr_no_args != NULL)
+    _func_ptr_no_args = std::move(other._func_ptr_no_args);
+  else
+    _func_ptr_no_args = NULL;
+
+  other._func_ptr_no_args = NULL;
+  return *this;
+}
+
+template <Numeric T> JobOneParam<T>::JobOneParam() : _func_ptr{NULL}, _args{NULL} {}
+
+template <Numeric T>
+JobOneParam<T>::JobOneParam(T (*func_ptr)(const T *), T arg1) : _func_ptr{new std::packaged_task<T(const T *)>(func_ptr)}, _args{new T{arg1}} {}
+
+template <Numeric T> JobOneParam<T>::JobOneParam(JobOneParam<T> &&other) {
+  // Move constructor.
+  delete _args;
+  if (other._func_ptr)
+    _func_ptr = std::move(other._func_ptr);
+  else
+    _func_ptr = NULL;
+
+  if (other._args)
+    _args = new T{*(other._args)};
+  else
+    _args = NULL;
+
+  other._func_ptr = NULL;
+  other._args = NULL;
+}
+
+template <Numeric T> JobOneParam<T> &JobOneParam<T>::operator=(JobOneParam<T> &&other) {
+  // Move assignment;
+  delete _args;
+  if (other._func_ptr)
+    _func_ptr = std::move(other._func_ptr);
+  else
+    _func_ptr = NULL;
+
+  if (other._args)
+    _args = new T{*(other._args)};
+  else
+    _args = NULL;
+
+  other._func_ptr = NULL;
+  other._args = NULL;
+  return *this;
+}
+
+template <Numeric T> JobOneParam<T>::~JobOneParam() {
+  // destructor
+  delete _args;
+}
+
+template <Numeric T> void JobOneParam<T>::Run() {
+  if (_func_ptr)
+    (*_func_ptr)(_args);
+}
+
+template <Numeric T> std::future<T> JobOneParam<T>::GetFuture() {
+  if (_func_ptr)
+    return _func_ptr->get_future();
+  else
+    throw std::runtime_error("Error! Cannot get std::future<T> object because there is no function to be executed.");
+}
+
+template <Numeric T> T JobOneParam<T>::GetArg1() {
+  if (_args)
+    return (*_args);
+  else
+    return 0;
+}
+
+template <Numeric T> JobTwoParam<T>::JobTwoParam() : _args{NULL}, _args2{NULL}, _func_ptr_2_args{NULL} {}
+
+template <Numeric T>
+JobTwoParam<T>::JobTwoParam(T (*func_ptr)(const T *, const T *), T arg1, T arg2)
+    : _args{new T{arg1}}, _args2{new T{arg2}}, _func_ptr_2_args{new std::packaged_task<T(const T *, const T *)>(func_ptr)} {}
+
+template <Numeric T> JobTwoParam<T>::JobTwoParam(JobTwoParam<T> &&other) {
+  delete _args;
+  delete _args2;
+
+  if (other._func_ptr_2_args)
+    _func_ptr_2_args = other._func_ptr_2_args;
+  else
+    _func_ptr_2_args = NULL;
+  if (other._args)
+    _args = other._args;
+  else
+    _args = NULL;
+
+  if (other._args2)
+    _args2 = other._args2;
+  else
+    _args2 = NULL;
+
+  other._func_ptr_2_args = NULL;
+  other._args = NULL;
+  other._args2 = NULL;
+}
+
+template <Numeric T> JobTwoParam<T>::~JobTwoParam() {
+  delete _args;
+  delete _args2;
+}
+
+template <Numeric T> JobTwoParam<T> &JobTwoParam<T>::operator=(JobTwoParam<T> &&other) {
+  delete _args;
+  delete _args2;
+
+  if (other._func_ptr_2_args)
+    _func_ptr_2_args = other._func_ptr_2_args;
+  else
+    _func_ptr_2_args = NULL;
+  if (other._args)
+    _args = other._args;
+  else
+    _args = NULL;
+  if (other._args2)
+    _args2 = other._args2;
+  else
+    _args2 = NULL;
+
+  other._func_ptr_2_args = NULL;
+  other._args = NULL;
+  other._args2 = NULL;
+  return *this;
+}
+
+template <Numeric T> void JobTwoParam<T>::Run() {
+  if (_func_ptr_2_args)
+    (*_func_ptr_2_args)(_args, _args2);
+}
+
+template <Numeric T> std::future<T> JobTwoParam<T>::GetFuture() {
+  if (_func_ptr_2_args)
+    return _func_ptr_2_args->get_future();
+  else
+    throw std::runtime_error("Error! Cannot get std::future<T> object because there is no function to be executed.");
+}
+
+template <Numeric T> T JobTwoParam<T>::GetArg1() {
+  if (_args)
+    return (*_args);
+  else
+    return 0;
+}
+
+template <Numeric T> T JobTwoParam<T>::GetArg2() {
+  if (_args2)
+    return (*_args2);
+  else
+    return 0;
+}
+
 NumericVariant Job<NumericVariant>::GetArg1() {
   // 0 is returned if there is no value for the first parameter of the Job.
   // The 0 gets casted.

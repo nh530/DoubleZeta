@@ -43,6 +43,64 @@ private:
   const T *_args2 = new T;
 };
 
+template <Numeric T> class JobNoParam : public BaseJob {
+public:
+  JobNoParam();
+  JobNoParam(T (*func_ptr)());
+  JobNoParam(JobNoParam<T> &other) = delete;
+  JobNoParam &operator=(Job<T> &other) = delete;
+  JobNoParam(JobNoParam<T> &&other);
+  JobNoParam &operator=(JobNoParam<T> &&other);
+  ~JobNoParam();
+  void Run();
+  std::future<T> GetFuture();
+
+private:
+  std::packaged_task<T()> *_func_ptr_no_args = NULL;
+};
+
+template <Numeric T> class JobOneParam : public BaseJob {
+public:
+  JobOneParam();
+  JobOneParam(T (*func_ptr)(const T *), T arg1);
+  JobOneParam(T (*func_ptr)(const T &), T arg1);
+  JobOneParam(T (*func_ptr)(const T), T arg1);
+  JobOneParam(JobOneParam<T> &other) = delete;
+  JobOneParam &operator=(JobOneParam<T> &other) = delete;
+  JobOneParam(JobOneParam<T> &&other);
+  JobOneParam &operator=(JobOneParam<T> &&other);
+  ~JobOneParam();
+  void Run();
+  std::future<T> GetFuture();
+  T GetArg1();
+
+private:
+  std::packaged_task<T(const T *)> *_func_ptr = NULL;
+  const T *_args = new T;
+};
+
+template <Numeric T> class JobTwoParam : public BaseJob {
+public:
+  JobTwoParam();
+  JobTwoParam(T (*func_ptr)(const T *, const T *), T arg1, T arg2);
+  JobTwoParam(T (*func_ptr)(const T &, const T &), T arg1, T arg2);
+  JobTwoParam(T (*func_ptr)(const T, const T), T arg1, T arg2);
+  JobTwoParam(JobTwoParam<T> &other) = delete;
+  JobTwoParam &operator=(JobTwoParam<T> &other) = delete;
+  JobTwoParam(JobTwoParam<T> &&other);
+  JobTwoParam &operator=(JobTwoParam<T> &&other);
+  ~JobTwoParam();
+  void Run();
+  std::future<T> GetFuture();
+  T GetArg1();
+  T GetArg2();
+
+private:
+  std::packaged_task<T(const T *, const T *)> *_func_ptr_2_args = NULL;
+  const T *_args = new T;
+  const T *_args2 = new T;
+};
+
 template <int_or_float T> class JobArr : public BaseJob {
 public:
   JobArr();

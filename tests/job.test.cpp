@@ -1,5 +1,6 @@
 #include "threadpool/Job.h"
 #include <gtest/gtest.h>
+// TODO: There is an issue in some of the move assignment tests. it is actually calling move constructor instead of assignment. NEED FIX.
 
 template <int_or_float T> T simp_add(const T *a, const T *b) { return *a + *b; };
 NumericVariant simp_add(const NumericVariant *a, const NumericVariant *b) {
@@ -19,6 +20,10 @@ NumericVariant simp_mul(const NumericVariant *a) {
 template <Numeric T> T simp_func() { return 100; }
 template <Numeric T> Job<T> *move_func(Job<T> &&x) {
   Job<T> *out = new Job(std::move(x));
+  return out;
+}
+template <Numeric T> JobNoParam<T> *move_func(JobNoParam<T> &&x) {
+  JobNoParam<T> *out = new JobNoParam(std::move(x));
   return out;
 }
 template <Numeric T> JobArr<T> *move_func(JobArr<T> &&x) {
@@ -244,7 +249,7 @@ TEST(Job, move_assignment) {
 
 TEST(Job, move_constr) {
   // Note that this does not test if the function pointer is correctly moved over.
-	int x = 10;
+  int x = 10;
   int y = 20;
   Job<int> test{&simp_add, &x, &y};
   Job<int> *out = move_func(std::move(test));
@@ -1114,4 +1119,512 @@ TEST(JobArr, run_and_get_future) {
   for (int i = 0; i < d; i++) {
     EXPECT_EQ(temp6[i], y[i] + 2);
   }
+}
+
+TEST(JobNoParam, initialization) {
+  // Note that this does not test if the function pointer is correctly initialized.
+  JobNoParam<int> test1{&simp_func};
+  JobNoParam<float> test8{&simp_func};
+  JobNoParam<int> test9{};
+  JobNoParam<float> test10{};
+  JobNoParam<NumericVariant> test13{&simp_func};
+  JobNoParam<NumericVariant> test23{};
+}
+
+TEST(JobNoParam, move_assignment) {
+  // Note that this does not test if the function pointer is correctly moved over.
+  JobNoParam<int> test7 = std::move(JobNoParam<int>(&simp_func));
+  JobNoParam<float> test8 = std::move(JobNoParam<float>(&simp_func));
+  JobNoParam<int> test9 = std::move(JobNoParam<int>());
+  JobNoParam<float> test10 = std::move(JobNoParam<float>());
+  JobNoParam<NumericVariant> test13 = std::move(JobNoParam<NumericVariant>{&simp_func});
+  JobNoParam<NumericVariant> test23 = std::move(JobNoParam<NumericVariant>{});
+}
+
+TEST(JobNoParam, move_constr) {
+  // Note that this does not test if the function pointer is correctly moved over.
+  JobNoParam<int> test7{&simp_func};
+  JobNoParam<int> *out7 = move_func(std::move(test7));
+  JobNoParam<int> test9{};
+  JobNoParam<int> *out9 = move_func(std::move(test9));
+  JobNoParam<NumericVariant> test13{&simp_func};
+  JobNoParam<NumericVariant> *out13 = move_func(std::move(test13));
+  JobNoParam<NumericVariant> test23 = std::move(JobNoParam<NumericVariant>{});
+  JobNoParam<NumericVariant> *out23 = move_func(std::move(test23));
+}
+
+TEST(JobNoParam, run) {
+  // This is just a sanity check to see that the Run method works.
+  Job<int> test7{&simp_func};
+  test7.Run();
+  Job<float> test8{&simp_func};
+  test8.Run();
+  // Null should silently Run and do nothing.
+  Job<int> test9{};
+  test9.Run();
+  Job<float> test10{};
+  test10.Run();
+  Job<NumericVariant> test15{&simp_func};
+  test15.Run();
+  Job<NumericVariant> test16{&simp_func};
+  test16.Run();
+}
+
+TEST(JobNoParam, get_future) {
+  // This is just a sanity check to see that the GetFuture method works.
+  Job<int> test7{&simp_func};
+  std::future<int> out7 = test7.GetFuture();
+  Job<float> test8{&simp_func};
+  std::future<float> out8 = test8.GetFuture();
+  Job<int> test9{};
+  EXPECT_THROW(test9.GetFuture(), std::runtime_error);
+  Job<float> test10{};
+  EXPECT_THROW(test10.GetFuture(), std::runtime_error);
+
+  Job<NumericVariant> test15{&simp_func};
+  std::future<NumericVariant> out15 = test15.GetFuture();
+  Job<NumericVariant> test16{&simp_func};
+  std::future<NumericVariant> out16 = test16.GetFuture();
+  Job<NumericVariant> test17{};
+  EXPECT_THROW(test17.GetFuture(), std::runtime_error);
+  Job<NumericVariant> test18{};
+  EXPECT_THROW(test18.GetFuture(), std::runtime_error);
+}
+
+TEST(JobNoParam, run_and_get_future) {
+  JobNoParam<int> test7{&simp_func};
+  auto res7 = test7.GetFuture();
+  test7.Run();
+  EXPECT_EQ(res7.get(), 100);
+
+  JobNoParam<float> test8{&simp_func};
+  auto res8 = test8.GetFuture();
+  test8.Run();
+  EXPECT_EQ(res8.get(), 100.0f);
+
+  JobNoParam<NumericVariant> test13{&simp_func};
+  auto res13 = test13.GetFuture();
+  test13.Run();
+  EXPECT_EQ(std::get<int>(res13.get()), 100);
+}
+
+TEST(JobOneParam, initialization) {
+  // Note that this does not test if the function pointer is correctly initialized.
+  int x = 10;
+  float x_f = 10.0;
+  JobOneParam<int> test3{&simp_mul, x};
+  EXPECT_EQ(test3.GetArg1(), 10);
+  JobOneParam<float> test4{&simp_mul, x_f};
+  EXPECT_EQ(test4.GetArg1(), 10.0f);
+  JobOneParam<NumericVariant> test12{&simp_mul, x};
+  EXPECT_EQ(std::get<int>(test12.GetArg1()), 10);
+  JobOneParam<NumericVariant> test15{&simp_mul, x_f};
+  EXPECT_EQ(std::get<float>(test15.GetArg1()), 10.0f);
+  NumericVariant x_n = NumericVariant(10); // int variant.
+
+  JobOneParam<NumericVariant> test18{&simp_mul, x_n};
+  EXPECT_EQ(std::get<int>(test18.GetArg1()), 10);
+  NumericVariant x_f_n = NumericVariant(10.1f); // float variant.
+  JobOneParam<NumericVariant> test21{&simp_mul, x_f_n};
+  EXPECT_EQ(std::get<float>(test21.GetArg1()), 10.1f);
+}
+
+TEST(JobOneParam, move_assignment) {
+  // Note that this does not test if the function pointer is correctly moved over.
+  int x = 10;
+  float x_f = 10.0;
+  auto temp = JobOneParam<int>(&simp_mul, x);
+  JobOneParam<int> test3;
+  test3 = std::move(temp);
+  EXPECT_EQ(test3.GetArg1(), 10);
+  auto temp2 = JobOneParam<float>(&simp_mul, x_f);
+  JobOneParam<float> test4;
+  test4 = std::move(temp2);
+  EXPECT_EQ(test4.GetArg1(), 10.0f);
+  auto temp3 = JobOneParam<int>();
+  JobOneParam<int> test9;
+  test9 = std::move(temp3);
+  EXPECT_EQ(test9.GetArg1(), 0);
+  auto temp4 = JobOneParam<float>();
+  JobOneParam<float> test10;
+  test10 = std::move(temp4);
+  EXPECT_EQ(test10.GetArg1(), 0.0f);
+  auto temp5 = JobOneParam<NumericVariant>{&simp_mul, x};
+  JobOneParam<NumericVariant> test12;
+  test12 = std::move(temp5);
+  EXPECT_EQ(std::get<int>(test12.GetArg1()), 10);
+  auto temp6 = JobOneParam<NumericVariant>{&simp_mul, x_f};
+  JobOneParam<NumericVariant> test15;
+  test15 = std::move(temp6);
+  EXPECT_EQ(std::get<float>(test15.GetArg1()), 10.0f);
+  NumericVariant x_n = NumericVariant(10); // int variant.
+
+  auto temp7 = JobOneParam<NumericVariant>{&simp_mul, x_n};
+  JobOneParam<NumericVariant> test18;
+  test18 = std::move(temp7);
+  EXPECT_EQ(std::get<int>(test18.GetArg1()), 10);
+  NumericVariant x_f_n = NumericVariant(10.1f); // float variant.
+  auto temp8 = JobOneParam<NumericVariant>{&simp_mul, x_f_n};
+  JobOneParam<NumericVariant> test21;
+  test21 = std::move(temp8);
+  EXPECT_EQ(std::get<float>(test21.GetArg1()), 10.1f);
+  auto temp9 = JobOneParam<NumericVariant>{};
+  JobOneParam<NumericVariant> test23;
+  test23 = std::move(temp9);
+  EXPECT_EQ(std::get<int>(test23.GetArg1()), 0);
+}
+
+TEST(JobOneParam, move_constr) {
+  // Note that this does not test if the function pointer is correctly moved over.
+  int x = 10;
+  float x_f = 10.0;
+  auto temp = JobOneParam<int>(&simp_mul, x);
+  JobOneParam<int> test3 = std::move(temp);
+  EXPECT_EQ(test3.GetArg1(), 10);
+  auto temp2 = JobOneParam<float>(&simp_mul, x_f);
+  JobOneParam<float> test4 = std::move(temp2);
+  EXPECT_EQ(test4.GetArg1(), 10.0f);
+  auto temp3 = JobOneParam<int>();
+  JobOneParam<int> test9 = std::move(temp3);
+  EXPECT_EQ(test9.GetArg1(), 0);
+  auto temp4 = JobOneParam<float>();
+  JobOneParam<float> test10 = std::move(temp4);
+  EXPECT_EQ(test10.GetArg1(), 0.0f);
+  auto temp5 = JobOneParam<NumericVariant>{&simp_mul, x};
+  JobOneParam<NumericVariant> test12 = std::move(temp5);
+  EXPECT_EQ(std::get<int>(test12.GetArg1()), 10);
+  auto temp6 = JobOneParam<NumericVariant>{&simp_mul, x_f};
+  JobOneParam<NumericVariant> test15 = std::move(temp6);
+  EXPECT_EQ(std::get<float>(test15.GetArg1()), 10.0f);
+  NumericVariant x_n = NumericVariant(10); // int variant.
+
+  auto temp7 = JobOneParam<NumericVariant>{&simp_mul, x_n};
+  JobOneParam<NumericVariant> test18 = std::move(temp7);
+  EXPECT_EQ(std::get<int>(test18.GetArg1()), 10);
+  NumericVariant x_f_n = NumericVariant(10.1f); // float variant.
+  auto temp8 = JobOneParam<NumericVariant>{&simp_mul, x_f_n};
+  JobOneParam<NumericVariant> test21 = std::move(temp8);
+  EXPECT_EQ(std::get<float>(test21.GetArg1()), 10.1f);
+  auto temp9 = JobOneParam<NumericVariant>{};
+  JobOneParam<NumericVariant> test23 = std::move(temp9);
+  EXPECT_EQ(std::get<int>(test23.GetArg1()), 0);
+}
+
+TEST(JobOneParam, run) {
+  // This is just a sanity check to see that the Run method works.
+  int x = 10;
+  float x_f = 10.0;
+  JobOneParam<int> test3{&simp_mul, x};
+  test3.Run();
+  JobOneParam<float> test4{&simp_mul, x_f};
+  test4.Run();
+  // Null should silently Run and do nothing.
+  JobOneParam<int> test9{};
+  test9.Run();
+  JobOneParam<float> test10{};
+  test10.Run();
+
+  JobOneParam<NumericVariant> test13{&simp_mul, x};
+  test13.Run();
+  JobOneParam<NumericVariant> test14{&simp_mul, x_f};
+  test14.Run();
+}
+
+TEST(JobOneParam, get_future) {
+  // This is just a sanity check to see that the GetFuture method works.
+  int x = 10;
+  float x_f = 10.0;
+  JobOneParam<int> test3{&simp_mul, x};
+  std::future<int> out3 = test3.GetFuture();
+  JobOneParam<float> test4{&simp_mul, x_f};
+  std::future<float> out4 = test4.GetFuture();
+  JobOneParam<int> test9{};
+  EXPECT_THROW(test9.GetFuture(), std::runtime_error);
+  JobOneParam<float> test10{};
+  EXPECT_THROW(test10.GetFuture(), std::runtime_error);
+
+  JobOneParam<NumericVariant> test13{&simp_mul, x};
+  std::future<NumericVariant> out13 = test13.GetFuture();
+  JobOneParam<NumericVariant> test14{&simp_mul, x_f};
+  std::future<NumericVariant> out14 = test14.GetFuture();
+  JobOneParam<NumericVariant> test17{};
+  EXPECT_THROW(test17.GetFuture(), std::runtime_error);
+  JobOneParam<NumericVariant> test18{};
+  EXPECT_THROW(test18.GetFuture(), std::runtime_error);
+}
+
+TEST(JobOneParam, run_and_get_future) {
+  int x = 10;
+  float x_f = 10.0;
+  JobOneParam<int> test3{&simp_mul, x};
+  auto res3 = test3.GetFuture();
+  test3.Run();
+  EXPECT_EQ(res3.get(), 20);
+
+  JobOneParam<float> test4{&simp_mul, x_f};
+  auto res4 = test4.GetFuture();
+  test4.Run();
+  EXPECT_EQ(res4.get(), 20.0f);
+
+  JobOneParam<NumericVariant> test10{&simp_mul, x};
+  auto res10 = test10.GetFuture();
+  test10.Run();
+  EXPECT_EQ(std::get<int>(res10.get()), 20);
+
+  JobOneParam<NumericVariant> test12{&simp_mul, x_f};
+  auto res12 = test12.GetFuture();
+  test12.Run();
+  EXPECT_EQ(std::get<float>(res12.get()), 20.0f);
+}
+
+TEST(JobTwoParam, initialization) {
+  // Note that this does not test if the function pointer is correctly initialized.
+  int x = 10;
+  int y = 20;
+  JobTwoParam<int> test{&simp_add, x, y};
+  EXPECT_EQ(test.GetArg1(), 10);
+  EXPECT_EQ(test.GetArg2(), 20);
+  float x_f = 10.0;
+  float y_f = 20.0;
+  JobTwoParam<float> test2{&simp_add, x_f, y_f};
+  EXPECT_EQ(test2.GetArg1(), 10.0f);
+  EXPECT_EQ(test2.GetArg2(), 20.0f);
+  JobTwoParam<int> test5{&simp_add, x, y};
+  EXPECT_EQ(test5.GetArg1(), 10);
+  EXPECT_EQ(test5.GetArg2(), 20);
+  JobTwoParam<float> test6{&simp_add, x_f, y_f};
+  EXPECT_EQ(test6.GetArg1(), 10.0f);
+  EXPECT_EQ(test6.GetArg2(), 20.0f);
+  JobTwoParam<int> test9{};
+  EXPECT_EQ(test9.GetArg1(), 0);
+  EXPECT_EQ(test9.GetArg2(), 0);
+  JobTwoParam<float> test10{};
+  EXPECT_EQ(test10.GetArg1(), 0.0f);
+  EXPECT_EQ(test10.GetArg2(), 0.0f);
+  JobTwoParam<NumericVariant> test14(&simp_add, x_f, y_f);
+  EXPECT_EQ(std::get<float>(test14.GetArg1()), 10.0f);
+  EXPECT_EQ(std::get<float>(test14.GetArg2()), 20.0f);
+  NumericVariant x_n = NumericVariant(10); // int variant.
+  NumericVariant y_n = NumericVariant(20);
+
+  JobTwoParam<NumericVariant> test17(&simp_add, x_n, y_n);
+  EXPECT_EQ(std::get<int>(test17.GetArg1()), 10);
+  EXPECT_EQ(std::get<int>(test17.GetArg2()), 20);
+  NumericVariant x_f_n = NumericVariant(10.1f); // float variant.
+  NumericVariant y_f_n = NumericVariant(20.2f);
+
+  JobTwoParam<NumericVariant> test20(&simp_add, x_f_n, y_f_n);
+  EXPECT_EQ(std::get<float>(test20.GetArg1()), 10.1f);
+  EXPECT_EQ(std::get<float>(test20.GetArg2()), 20.2f);
+  JobTwoParam<NumericVariant> test23{};
+  EXPECT_EQ(std::get<int>(test23.GetArg1()), 0);
+  EXPECT_EQ(std::get<int>(test23.GetArg2()), 0);
+  JobTwoParam<NumericVariant> test24{};
+  EXPECT_EQ(std::get<int>(test24.GetArg1()), 0);
+  EXPECT_EQ(std::get<int>(test24.GetArg2()), 0);
+}
+
+TEST(JobTwoParam, move_assignment) {
+  // Note that this does not test if the function pointer is correctly moved over.
+  int x = 10;
+  int y = 20;
+  auto temp1 = JobTwoParam<int>(&simp_add, x, y);
+  JobTwoParam<int> test;
+  test = std::move(temp1);
+  EXPECT_EQ(test.GetArg1(), 10);
+  EXPECT_EQ(test.GetArg2(), 20);
+  float x_f = 10.0;
+  float y_f = 20.0;
+  auto temp2 = JobTwoParam<float>(&simp_add, x_f, y_f);
+  JobTwoParam<float> test2;
+  test2 = std::move(temp2);
+  EXPECT_EQ(test2.GetArg1(), 10);
+  EXPECT_EQ(test2.GetArg2(), 20);
+  auto temp3 = JobTwoParam<int>(&simp_add, x, y);
+  JobTwoParam<int> test5;
+  test5 = std::move(temp3);
+  EXPECT_EQ(test5.GetArg1(), 10);
+  EXPECT_EQ(test5.GetArg2(), 20);
+  auto temp4 = JobTwoParam<float>(&simp_add, x_f, y_f);
+  JobTwoParam<float> test6;
+  test6 = std::move(temp4);
+  EXPECT_EQ(test6.GetArg1(), 10.0f);
+  EXPECT_EQ(test6.GetArg2(), 20.0f);
+  auto temp5 = JobTwoParam<int>();
+  JobTwoParam<int> test9;
+  test9 = std::move(temp5);
+  EXPECT_EQ(test9.GetArg1(), 0);
+  EXPECT_EQ(test9.GetArg2(), 0);
+  auto temp6 = JobTwoParam<float>();
+  JobTwoParam<float> test10;
+  test10 = std::move(temp6);
+  EXPECT_EQ(test10.GetArg1(), 0.0f);
+  EXPECT_EQ(test10.GetArg2(), 0.0f);
+  auto temp7 = JobTwoParam<NumericVariant>(&simp_add, x, y);
+  JobTwoParam<NumericVariant> test11;
+  test11 = std::move(temp7);
+  EXPECT_EQ(std::get<int>(test11.GetArg1()), 10);
+  EXPECT_EQ(std::get<int>(test11.GetArg2()), 20);
+  auto temp8 = JobTwoParam<NumericVariant>(&simp_add, x_f, y_f);
+  JobTwoParam<NumericVariant> test14;
+  test14 = std::move(temp8);
+  EXPECT_EQ(std::get<float>(test14.GetArg1()), 10.0f);
+  EXPECT_EQ(std::get<float>(test14.GetArg2()), 20.0f);
+  NumericVariant x_n = NumericVariant(10); // int variant.
+  NumericVariant y_n = NumericVariant(20);
+
+  auto temp9 = JobTwoParam<NumericVariant>(&simp_add, x_n, y_n);
+  JobTwoParam<NumericVariant> test17;
+  test17 = std::move(temp9);
+  EXPECT_EQ(std::get<int>(test17.GetArg1()), 10);
+  EXPECT_EQ(std::get<int>(test17.GetArg2()), 20);
+  NumericVariant x_f_n = NumericVariant(10.1f); // float variant.
+  NumericVariant y_f_n = NumericVariant(20.2f);
+
+  auto temp10 = JobTwoParam<NumericVariant>(&simp_add, x_f_n, y_f_n);
+  JobTwoParam<NumericVariant> test20;
+  test20 = std::move(temp10);
+  EXPECT_EQ(std::get<float>(test20.GetArg1()), 10.1f);
+  EXPECT_EQ(std::get<float>(test20.GetArg2()), 20.2f);
+  auto temp11 = Job<NumericVariant>{};
+  Job<NumericVariant> test23;
+  test23 = std::move(temp11);
+  EXPECT_EQ(std::get<int>(test23.GetArg1()), 0);
+  EXPECT_EQ(std::get<int>(test23.GetArg2()), 0);
+  EXPECT_EQ(test23._debug_func(), 0);
+}
+
+TEST(JobTwoParam, move_constr) {
+  // Note that this does not test if the function pointer is correctly moved over.
+  int x = 10;
+  int y = 20;
+  auto temp1 = JobTwoParam<int>(&simp_add, x, y);
+  JobTwoParam<int> test = std::move(temp1);
+  EXPECT_EQ(test.GetArg1(), 10);
+  EXPECT_EQ(test.GetArg2(), 20);
+  float x_f = 10.0;
+  float y_f = 20.0;
+  auto temp2 = JobTwoParam<float>(&simp_add, x_f, y_f);
+  JobTwoParam<float> test2 = std::move(temp2);
+  EXPECT_EQ(test2.GetArg1(), 10);
+  EXPECT_EQ(test2.GetArg2(), 20);
+  auto temp3 = JobTwoParam<int>(&simp_add, x, y);
+  JobTwoParam<int> test5 = std::move(temp3);
+  EXPECT_EQ(test5.GetArg1(), 10);
+  EXPECT_EQ(test5.GetArg2(), 20);
+  auto temp4 = JobTwoParam<float>(&simp_add, x_f, y_f);
+  JobTwoParam<float> test6 = std::move(temp4);
+  EXPECT_EQ(test6.GetArg1(), 10.0f);
+  EXPECT_EQ(test6.GetArg2(), 20.0f);
+  auto temp5 = JobTwoParam<int>();
+  JobTwoParam<int> test9 = std::move(temp5);
+  EXPECT_EQ(test9.GetArg1(), 0);
+  EXPECT_EQ(test9.GetArg2(), 0);
+  auto temp6 = JobTwoParam<float>();
+  JobTwoParam<float> test10 = std::move(temp6);
+  EXPECT_EQ(test10.GetArg1(), 0.0f);
+  EXPECT_EQ(test10.GetArg2(), 0.0f);
+  auto temp7 = JobTwoParam<NumericVariant>(&simp_add, x, y);
+  JobTwoParam<NumericVariant> test11 = std::move(temp7);
+  EXPECT_EQ(std::get<int>(test11.GetArg1()), 10);
+  EXPECT_EQ(std::get<int>(test11.GetArg2()), 20);
+  auto temp8 = JobTwoParam<NumericVariant>(&simp_add, x_f, y_f);
+  JobTwoParam<NumericVariant> test14 = std::move(temp8);
+  EXPECT_EQ(std::get<float>(test14.GetArg1()), 10.0f);
+  EXPECT_EQ(std::get<float>(test14.GetArg2()), 20.0f);
+  NumericVariant x_n = NumericVariant(10); // int variant.
+  NumericVariant y_n = NumericVariant(20);
+
+  auto temp9 = JobTwoParam<NumericVariant>(&simp_add, x_n, y_n);
+  JobTwoParam<NumericVariant> test17 = std::move(temp9);
+  EXPECT_EQ(std::get<int>(test17.GetArg1()), 10);
+  EXPECT_EQ(std::get<int>(test17.GetArg2()), 20);
+  NumericVariant x_f_n = NumericVariant(10.1f); // float variant.
+  NumericVariant y_f_n = NumericVariant(20.2f);
+
+  auto temp10 = JobTwoParam<NumericVariant>(&simp_add, x_f_n, y_f_n);
+  JobTwoParam<NumericVariant> test20 = std::move(temp10);
+  EXPECT_EQ(std::get<float>(test20.GetArg1()), 10.1f);
+  EXPECT_EQ(std::get<float>(test20.GetArg2()), 20.2f);
+  auto temp11 = Job<NumericVariant>{};
+  Job<NumericVariant> test23 = std::move(temp11);
+  EXPECT_EQ(std::get<int>(test23.GetArg1()), 0);
+  EXPECT_EQ(std::get<int>(test23.GetArg2()), 0);
+  EXPECT_EQ(test23._debug_func(), 0);
+}
+
+TEST(JobTwoParam, run) {
+  // This is just a sanity check to see that the Run method works.
+  int x = 10;
+  int y = 20;
+  JobTwoParam<int> test{&simp_add, x, y};
+  test.Run();
+
+  float x_f = 10.0;
+  float y_f = 20.0;
+  JobTwoParam<float> test2{&simp_add, x_f, y_f};
+  test2.Run();
+	// Null should silently Run and do nothing.
+  JobTwoParam<int> test9{};
+  test9.Run();
+  JobTwoParam<float> test10{};
+  test10.Run();
+
+  JobTwoParam<NumericVariant> test11{&simp_add, x, y};
+  test11.Run();
+  JobTwoParam<NumericVariant> test12{&simp_add, x_f, y_f};
+  test12.Run();
+}
+
+TEST(JobTwoParam, get_future) {
+  // This is just a sanity check to see that the GetFuture method works.
+  int x = 10;
+  int y = 20;
+  JobTwoParam<int> test{&simp_add, x, y};
+  std::future<int> out = test.GetFuture();
+
+  float x_f = 10.0;
+  float y_f = 20.0;
+  JobTwoParam<float> test2{&simp_add, x_f, y_f};
+  std::future<float> out2 = test2.GetFuture();
+
+	JobTwoParam<int> test9{};
+  EXPECT_THROW(test9.GetFuture(), std::runtime_error);
+  JobTwoParam<float> test10{};
+  EXPECT_THROW(test10.GetFuture(), std::runtime_error);
+
+  JobTwoParam<NumericVariant> test11{&simp_add, x, y};
+  std::future<NumericVariant> out11 = test11.GetFuture();
+  JobTwoParam<NumericVariant> test12{&simp_add, x_f, y_f};
+  std::future<NumericVariant> out12 = test12.GetFuture();
+	JobTwoParam<NumericVariant> test17{};
+  EXPECT_THROW(test17.GetFuture(), std::runtime_error);
+  JobTwoParam<NumericVariant> test18{};
+  EXPECT_THROW(test18.GetFuture(), std::runtime_error);
+}
+
+TEST(JobTwoParam, run_and_get_future) {
+  int x = 10;
+  int y = 20;
+  JobTwoParam<int> test{&simp_add, x, y};
+  auto res = test.GetFuture();
+  test.Run();
+  EXPECT_EQ(res.get(), 30);
+
+  float x_f = 10.0;
+  float y_f = 20.0;
+  JobTwoParam<float> test2{&simp_add, x_f, y_f};
+  auto res2 = test2.GetFuture();
+  test2.Run();
+  EXPECT_EQ(res2.get(), 30.0f);
+
+  JobTwoParam<NumericVariant> test11{&simp_add, x, y};
+  std::future<NumericVariant> out11 = test11.GetFuture();
+  test11.Run();
+  EXPECT_EQ(std::get<int>(out11.get()), 30);
+
+  JobTwoParam<NumericVariant> test9{&simp_add, x_f, y_f};
+  std::future<NumericVariant> res9 = test9.GetFuture();
+  test9.Run();
+  EXPECT_EQ(std::get<float>(res9.get()), 30.0f);
 }
