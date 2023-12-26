@@ -201,6 +201,14 @@ template <Numeric T> JobOneParam<T>::JobOneParam() : _func_ptr{NULL}, _args{NULL
 template <Numeric T>
 JobOneParam<T>::JobOneParam(T (*func_ptr)(const T *), T arg1) : _func_ptr{new std::packaged_task<T(const T *)>(func_ptr)}, _args{new T{arg1}} {}
 
+template <Numeric T> JobOneParam<T>::JobOneParam(T (*func_ptr)(const T &), T arg1) : _args{new T{arg1}} {
+  _func_ptr = new std::packaged_task<T(const T *)>([func_ptr](const T *x) -> T { return (func_ptr(*x)); });
+}
+
+template <Numeric T> JobOneParam<T>::JobOneParam(T (*func_ptr)(const T), T arg1) : _args{new T{arg1}} {
+  _func_ptr = new std::packaged_task<T(const T *)>([func_ptr](const T *x) -> T { return (func_ptr(*x)); });
+}
+
 template <Numeric T> JobOneParam<T>::JobOneParam(JobOneParam<T> &&other) {
   // Move constructor.
   delete _args;
@@ -265,6 +273,14 @@ template <Numeric T> JobTwoParam<T>::JobTwoParam() : _args{NULL}, _args2{NULL}, 
 template <Numeric T>
 JobTwoParam<T>::JobTwoParam(T (*func_ptr)(const T *, const T *), T arg1, T arg2)
     : _args{new T{arg1}}, _args2{new T{arg2}}, _func_ptr_2_args{new std::packaged_task<T(const T *, const T *)>(func_ptr)} {}
+
+template <Numeric T> JobTwoParam<T>::JobTwoParam(T (*func_ptr)(const T &, const T &), T arg1, T arg2) : _args{new T{arg1}}, _args2{new T{arg2}} {
+  _func_ptr_2_args = new std::packaged_task<T(const T *, const T *)>([func_ptr](const T *x, const T *y) -> T { return (func_ptr(*x, *y)); });
+}
+
+template <Numeric T> JobTwoParam<T>::JobTwoParam(T (*func_ptr)(const T, const T), T arg1, T arg2) : _args{new T{arg1}}, _args2{new T{arg2}} {
+  _func_ptr_2_args = new std::packaged_task<T(const T *, const T *)>([func_ptr](const T *x, const T *y) -> T { return (func_ptr(*x, *y)); });
+}
 
 template <Numeric T> JobTwoParam<T>::JobTwoParam(JobTwoParam<T> &&other) {
   delete _args;
