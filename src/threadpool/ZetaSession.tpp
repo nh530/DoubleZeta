@@ -145,9 +145,29 @@ template <Numeric T> Status<T> *ZetaSession::SubmitTask(T (*func)(const T *, con
   return out;
 }
 
-template <Numeric T> T Status<T>::GetResults() { return std::get<T>(_data->GetFuture()); }
+template <Numeric T> T Status<T>::GetResults() {
+  std::future<T> out;
+  _data->GetFuture(out);
+  return std::get<T>(out);
+}
 
-template <Numeric T> std::future<T> Status<T>::GetFuture() { return _data->GetFuture(); }
+template <Numeric T> std::future<T> Status<T>::GetFuture() {
+  std::future<T> out{};
+  _data->GetFuture(out);
+  return out;
+}
+
+template <Numeric T> std::future<T *> Status<T>::GetFuturePtr() {
+  std::future<T *> out{};
+  _data->GetFuture(out);
+  return out;
+}
+
+template <Numeric T> T *Status<T>::GetResultsPtr() {
+  std::future<T *> out;
+  _data->GetFuture(out);
+  return std::get<T *>(out);
+}
 
 template <Numeric T> Status<T>::~Status() { delete _data; }
 

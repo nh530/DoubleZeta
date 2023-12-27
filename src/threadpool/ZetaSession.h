@@ -37,8 +37,10 @@ template <Numeric T> struct Status {
    *   as possible.
    * */
   T GetResults();
+  T *GetResultsPtr();
   std::future<T> GetFuture();
-  Job<T> *_data;
+  std::future<T *> GetFuturePtr();
+  BaseJob *_data;
   ~Status();
 };
 
@@ -52,6 +54,7 @@ public:
   template <Numeric T> Status<T> *SubmitTask(T (*func)());
   template <Numeric T> Status<T> *SubmitTask(T (*func)(const T *), T *arg1);
   template <Numeric T> Status<T> *SubmitTask(T (*func)(const T *, const T *), T *arg1, T *arg2);
+  // TODO: Add member methods for functions that operate on arrays or matrices.
 
   int Size();
   void StartPool();
