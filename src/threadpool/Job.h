@@ -11,9 +11,22 @@ Reference: https://isocpp.org/wiki/faq/templates#templates-defn-vs-decl
 #define JOB_H
 
 class BaseJob {
+  /* Note that the pure virtual function is defined in all sub-types (derived classes).
+   * However, not all optinal virtual methods are defined in the derived classes and only the one for the respective template type
+   * is required and defined. For instance, a `Job<int>` sub-class will have the `void GetFuture(std::future<int> &out)` defined, and
+   * all other optinal virtual methods are given the default definition of raising a runtime error. Of course, this pattern might not hold
+   * for all derived classes as it is possible that they implement more than one of these optional virtual methods.
+   *
+   * This was needed to achieve polymorphism for the interface.
+   * */
 public:
   virtual void Run() = 0;
-  template <Numeric T> std::future<T> GetFuture();
+  virtual void GetFuture(std::future<int> &out) { std::runtime_error("Not implemented! Please don't use this method."); }
+  virtual void GetFuture(std::future<float> &out) { std::runtime_error("Not implemented! Please don't use this method."); }
+  virtual void GetFuture(std::future<NumericVariant> &out) { std::runtime_error("Not inplemented! Please don't use this method."); }
+  virtual void GetFuture(std::future<int *> &out) { std::runtime_error("Not inplemented! Please don't use this method."); }
+  virtual void GetFuture(std::future<float *> &out) { std::runtime_error("Not implemented! Please don't use this method."); }
+  virtual void GetFuture(std::future<NumericVariant *> &out) { std::runtime_error("Not inplemented! Please don't use this method."); }
   virtual ~BaseJob() { // Do nothing; This is handled in subclasses (derived classes)
   }
 };
@@ -28,9 +41,10 @@ public:
   Job &operator=(Job<T> &other) = delete;
   Job(Job<T> &&other);
   Job &operator=(Job<T> &&other);
-  ~Job();
-  void Run();
+  ~Job() override;
+  void Run() override;
   std::future<T> GetFuture();
+  void GetFuture(std::future<T> &out) override;
   T GetArg1();
   T GetArg2();
   int _debug_func(); // Method is for testing purposes only; Not for end-users; Used for unit testing
@@ -51,8 +65,9 @@ public:
   JobNoParam &operator=(Job<T> &other) = delete;
   JobNoParam(JobNoParam<T> &&other);
   JobNoParam &operator=(JobNoParam<T> &&other);
-  ~JobNoParam();
-  void Run();
+  ~JobNoParam() override;
+  void Run() override;
+  void GetFuture(std::future<T> &out) override;
   std::future<T> GetFuture();
 
 private:
@@ -69,9 +84,10 @@ public:
   JobOneParam &operator=(JobOneParam<T> &other) = delete;
   JobOneParam(JobOneParam<T> &&other);
   JobOneParam &operator=(JobOneParam<T> &&other);
-  ~JobOneParam();
-  void Run();
+  ~JobOneParam() override;
+  void Run() override;
   std::future<T> GetFuture();
+  void GetFuture(std::future<T> &out) override;
   T GetArg1();
 
 private:
@@ -89,9 +105,10 @@ public:
   JobTwoParam &operator=(JobTwoParam<T> &other) = delete;
   JobTwoParam(JobTwoParam<T> &&other);
   JobTwoParam &operator=(JobTwoParam<T> &&other);
-  ~JobTwoParam();
-  void Run();
+  ~JobTwoParam() override;
+  void Run() override;
   std::future<T> GetFuture();
+  void GetFuture(std::future<T> &out) override;
   T GetArg1();
   T GetArg2();
 
@@ -99,6 +116,52 @@ private:
   std::packaged_task<T(const T *, const T *)> *_func_ptr_2_args = NULL;
   const T *_args = new T;
   const T *_args2 = new T;
+};
+
+template <int_or_float T> class JobTwoParamA : public BaseJob {
+public:
+  JobTwoParamA();
+  JobTwoParamA(T *(*func_ptr)(const T *, const T *, const int, const int), T *arg1, T *arg2, int len_args1, int len_args2);
+  JobTwoParamA(JobTwoParamA<T> &other) = delete;
+  JobTwoParamA &operator=(JobTwoParamA<T> &other) = delete;
+  JobTwoParamA(JobTwoParamA<T> &&other);
+  JobTwoParamA &operator=(JobTwoParamA<T> &&other);
+  ~JobTwoParamA() override;
+  void Run() override;
+  std::future<T *> GetFuture();
+  void GetFuture(std::future<T *> &out) override;
+  T *GetArg1();
+  T *GetArg2();
+  int GetLen1();
+  int GetLen2();
+
+private:
+  std::packaged_task<T *(const T *, const T *, const int, const int)> *_func_ptr_2_args_arr = NULL;
+  T *_args;
+  T *_args2;
+  int _len1;
+  int _len2;
+};
+
+template <int_or_float T> class JobOneParamA : public BaseJob {
+public:
+  JobOneParamA();
+  JobOneParamA(T *(*func_ptr)(const T *, const int), T *arg1, int len_args1);
+  JobOneParamA(JobOneParamA<T> &other) = delete;
+  JobOneParamA &operator=(JobOneParamA<T> &other) = delete;
+  JobOneParamA(JobOneParamA<T> &&other);
+  JobOneParamA &operator=(JobOneParamA<T> &&other);
+  ~JobOneParamA() override;
+  void Run() override;
+  void GetFuture(std::future<T *> &out) override;
+  std::future<T *> GetFuture();
+  T *GetArg1();
+  int GetLen1();
+
+private:
+  std::packaged_task<T *(const T *, const int)> *_func_ptr = NULL;
+  T *_args;
+  int _len1;
 };
 
 template <int_or_float T> class JobArr : public BaseJob {
@@ -118,8 +181,8 @@ public:
   JobArr &operator=(JobArr<T> &other) = delete;
   JobArr(JobArr<T> &&other);
   JobArr &operator=(JobArr<T> &&other);
-  ~JobArr();
-  void Run();
+  ~JobArr() override;
+  void Run() override;
   std::future<T> GetFuture();
   std::future<T *> GetFuturePtr();
   T *GetArg1();
@@ -141,8 +204,8 @@ private:
   std::packaged_task<T *()> *_func_ptr_no_args_arr = NULL;
   int c_i;
   float c_f;
-  T *_args;
-  T *_args2;
+  T *_args = NULL;
+  T *_args2 = NULL;
   int _len1;
   int _len2;
 };
@@ -164,8 +227,8 @@ public:
   Job &operator=(Job<NumericVariant> &other) = delete;
   Job(Job<NumericVariant> &&other);
   Job &operator=(Job<NumericVariant> &&other);
-  ~Job();
-  void Run();
+  ~Job() override;
+  void Run() override;
   std::future<NumericVariant> GetFuture();
   NumericVariant GetArg1();
   NumericVariant GetArg2();
