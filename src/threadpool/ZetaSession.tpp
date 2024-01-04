@@ -6,8 +6,6 @@
  * parallel computing of many equations.
  */
 
-#include "threadpool/Job.h"
-#include "typing/DTypes.h"
 #include <future>
 #include <iostream>
 #include <queue>
@@ -16,6 +14,8 @@
 
 #ifndef ZETASESSION_TPP
 #define ZETASESSION_TPP
+#include "threadpool/Job.h"
+#include "typing/DTypes.h"
 
 #include "threadpool/ZetaSession.h"
 
@@ -96,14 +96,13 @@ ZetaSession::ZetaSession(int thread_cnt) : num_threads{thread_cnt} {
 
 ZetaSession::~ZetaSession() { pool.Stop(); } // Releases resources
 
-Status<NumericVariant> *ZetaSession::SubmitTask(NumericVariant (*func)()) {
+Status<NumericVariant> ZetaSession::SubmitTask(NumericVariant (*func)()) {
   Job<NumericVariant> *task = new Job<NumericVariant>{func};
   pool.QueueJob(*task);
-  Status<NumericVariant> *out = new Status<NumericVariant>{._data = task};
-  return out;
+  return Status<NumericVariant>(task);
 }
 
-template <Numeric T> Status<T> *ZetaSession::SubmitTask(T (*func)()) {
+template <Numeric T> Status<T> ZetaSession::SubmitTask(T (*func)()) {
   /* This method is used to submit a 0 parameter function to the thread pool. A status object is created on the Heap, and a
    * pointer to this object is returned to the caller.
    *
@@ -111,13 +110,12 @@ template <Numeric T> Status<T> *ZetaSession::SubmitTask(T (*func)()) {
    * - Cannot return a copy of this object. This will create object on the stack instead and create an issue for the queue, which takes in
    *   pointers only. i.e. Job object resource will be released before completion.
    * */
-  Job<T> *task = new Job<T>{func};
+  JobNoParam<T> *task = new JobNoParam<T>{func};
   pool.QueueJob(*task);
-  Status<T> *out = new Status<T>{._data = task};
-  return out;
+  return Status<T>(task);
 }
 
-template <Numeric T> Status<T> *ZetaSession::SubmitTask(T (*func)(const T *), T *arg1) {
+template <Numeric T> Status<T> ZetaSession::SubmitTask(T (*func)(const T), T arg1) {
   /* This method is used to submit a 1 parameter function to the thread pool. A status object is created on the Heap, and a
    * pointer to this object is returned to the caller.
    *
@@ -125,13 +123,12 @@ template <Numeric T> Status<T> *ZetaSession::SubmitTask(T (*func)(const T *), T 
    * - Cannot return a copy of this object. This will create object on the stack instead and create an issue for the queue, which takes in
    *   pointers only. i.e. Job object resource will be released before completion.
    * */
-  Job<T> *task = new Job<T>{func, arg1};
+  JobOneParam<T> *task = new JobOneParam<T>{func, arg1};
   pool.QueueJob(*task);
-  Status<T> *out = new Status<T>{._data = task};
-  return out;
+  return Status<T>(task);
 }
 
-template <Numeric T> Status<T> *ZetaSession::SubmitTask(T (*func)(const T *, const T *), T *arg1, T *arg2) {
+template <Numeric T> Status<T> ZetaSession::SubmitTask(T (*func)(const T, const T), T arg1, T arg2) {
   /* This method is used to submit a 2 parameter function to the thread pool. A status object is created on the Heap, and a
    * pointer to this object is returned to the caller.
    *
@@ -139,35 +136,69 @@ template <Numeric T> Status<T> *ZetaSession::SubmitTask(T (*func)(const T *, con
    * - Cannot return a copy of this object. This will create object on the stack instead and create an issue for the queue, which takes in
    *   pointers only. i.e. Job object resource will be released before completion.
    * */
-  Job<T> *task = new Job<T>{func, arg1, arg2};
+  JobTwoParam<T> *task = new JobTwoParam<T>{func, arg1, arg2};
   pool.QueueJob(*task);
-  Status<T> *out = new Status<T>{._data = task};
-  return out;
+  return Status<T>(task);
+}
+
+template <Numeric T> Status<T> ZetaSession::SubmitTask(T *(*func)(const T *, const int), T *arg1, int len1) {
+  JobOneParamA<T> *task = new JobOneParamA<T>{func, arg1, len1};
+  pool.QueueJob(*task);
+  return Status<T>(task);
+}
+
+template <Numeric T> Status<T> ZetaSession::SubmitTask(T *(*func)(const T *, const T *, const int, const int), T *arg1, T *arg2, int len1, int len2) {
+  /* This method is used to submit a 2 parameter array function to the thread pool. A status object is created on the Heap, and a
+   * pointer to this object is returned to the caller.
+   *
+   * Notes:
+   * - Cannot return a copy of this object. This will create object on the stack instead and create an issue for the queue, which takes in
+   *   pointers only. i.e. Job object resource will be released before completion.
+   * */
+  JobTwoParamA<T> *task = new JobTwoParamA<T>{func, *arg1, *arg2};
+  pool.QueueJob(*task);
+  return Status<T>(task);
 }
 
 template <Numeric T> T Status<T>::GetResults() {
   std::future<T> out;
   _data->GetFuture(out);
-  return std::get<T>(out);
+  return out.get();
 }
 
 template <Numeric T> std::future<T> Status<T>::GetFuture() {
   std::future<T> out{};
   _data->GetFuture(out);
-  return out;
+  return std::move(out);
 }
 
 template <Numeric T> std::future<T *> Status<T>::GetFuturePtr() {
   std::future<T *> out{};
   _data->GetFuture(out);
-  return out;
+  return std::move(out);
 }
 
 template <Numeric T> T *Status<T>::GetResultsPtr() {
   std::future<T *> out;
   _data->GetFuture(out);
-  return std::get<T *>(out);
+  return out.get();
 }
+
+template <Numeric T> Status<T>::Status(BaseJob *job) : _data{job} {}
+
+template <Numeric T> Status<T>::Status(Status<T> &&other) {
+  _data = other._data;
+  other._data = NULL;
+}
+
+template <Numeric T> Status<T> &Status<T>::operator=(Status<T> &&other) {
+  delete _data;
+  _data = other._data;
+  other._data = NULL;
+  return *this;
+}
+
+template <Numeric T> Status<T>::Status() { _data = NULL; }
 
 template <Numeric T> Status<T>::~Status() { delete _data; }
 

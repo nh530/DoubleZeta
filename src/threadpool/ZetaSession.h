@@ -1,5 +1,3 @@
-#include "threadpool/Job.h"
-#include "typing/DTypes.h"
 #include <future>
 #include <queue>
 #include <thread>
@@ -8,6 +6,8 @@
 
 #ifndef ZETASESSION_H
 #define ZETASESSION_H
+#include "threadpool/Job.h"
+#include "typing/DTypes.h"
 
 class ThreadPool {
 
@@ -26,7 +26,7 @@ private:
   std::queue<BaseJob *> jobs;
 };
 
-template <Numeric T> struct Status {
+template <Numeric T> class Status {
   /* This user defined type is to provide the end user a controlled way to check when the job is done.
    * The future object can be returned directly, however, there will be no way to correctly achieve the deletion of Job objects because
    * DoubleZeta to know when the end-user is done with the results or when the end-user collects the results.
@@ -35,13 +35,24 @@ template <Numeric T> struct Status {
    * Notes:
    * - Something like shared pointers can be used to manage the memory of the Job object. However, it was decided to keep the application as lean
    *   as possible.
+   * - If the submitted function is suppose to return a pointer, then use the GetResultsPtr or GetFuturePtr methods to get the finished results.
+   * - If the submitted function just returns a value, then use the GetResults or GetFuture methods to get the finished results.
    * */
-  T GetResults();
+public: 
+	T GetResults();
   T *GetResultsPtr();
   std::future<T> GetFuture();
   std::future<T *> GetFuturePtr();
-  BaseJob *_data;
+  Status(BaseJob *);
+  Status();
+  Status(Status<T> &&other);
+  Status<T> &operator=(Status<T> &&other);
+  Status(Status<T> &other) = delete;
+  Status<T> &operator=(Status<T> &other) = delete;
   ~Status();
+
+private:
+  BaseJob *_data;
 };
 
 class ZetaSession {
@@ -49,13 +60,13 @@ public:
   ZetaSession(int thread_cnt);
   ~ZetaSession();
   bool Busy();
-  Status<NumericVariant> *SubmitTask(NumericVariant (*func)());
+  Status<NumericVariant> SubmitTask(NumericVariant (*func)());
   void SubmitTask(BaseJob &task);
-  template <Numeric T> Status<T> *SubmitTask(T (*func)());
-  template <Numeric T> Status<T> *SubmitTask(T (*func)(const T *), T *arg1);
-  template <Numeric T> Status<T> *SubmitTask(T (*func)(const T *, const T *), T *arg1, T *arg2);
-  // TODO: Add member methods for functions that operate on arrays or matrices.
-
+  template <Numeric T> Status<T> SubmitTask(T (*func)());
+  template <Numeric T> Status<T> SubmitTask(T (*func)(const T), T arg1);
+  template <Numeric T> Status<T> SubmitTask(T (*func)(const T, const T), T arg1, T arg2);
+  template <Numeric T> Status<T> SubmitTask(T *(*func)(const T *, const int), T *arg1, int len1);
+  template <Numeric T> Status<T> SubmitTask(T *(*func)(const T *, const T *, const int, const int), T *arg1, T *arg2, int len1, int len2);
   int Size();
   void StartPool();
   void ShutdownPool();
