@@ -65,6 +65,7 @@ add_executable(test_run
 	./tests/bsc_core.test.cpp
 	./tests/dw.test.cpp
 	./tests/job.test.cpp
+	./tests/zetasession.test.cpp
 	#./tests/integration/LinearRegression.test.cpp
 )
 target_link_libraries(test_run GTest::gtest_main src)
