@@ -1,13 +1,12 @@
+#ifndef ZETASESSION_H
+#define ZETASESSION_H
+#include "threadpool/Job.h"
+#include "typing/DTypes.h"
 #include <future>
 #include <queue>
 #include <thread>
 #include <variant>
 #include <vector>
-
-#ifndef ZETASESSION_H
-#define ZETASESSION_H
-#include "threadpool/Job.h"
-#include "typing/DTypes.h"
 
 class ThreadPool {
 
@@ -38,8 +37,8 @@ template <Numeric T> class Status {
    * - If the submitted function is suppose to return a pointer, then use the GetResultsPtr or GetFuturePtr methods to get the finished results.
    * - If the submitted function just returns a value, then use the GetResults or GetFuture methods to get the finished results.
    * */
-public: 
-	T GetResults();
+public:
+  T GetResults();
   T *GetResultsPtr();
   std::future<T> GetFuture();
   std::future<T *> GetFuturePtr();
@@ -65,6 +64,7 @@ public:
   template <Numeric T> Status<T> SubmitTask(T (*func)());
   template <Numeric T> Status<T> SubmitTask(T (*func)(const T), T arg1);
   template <Numeric T> Status<T> SubmitTask(T (*func)(const T, const T), T arg1, T arg2);
+	template <Numeric T> Status<T> SubmitTask(T *(*func)(const T *, const int, const T), T *arg1, int len1, T cons);
   template <Numeric T> Status<T> SubmitTask(T *(*func)(const T *, const int), T *arg1, int len1);
   template <Numeric T> Status<T> SubmitTask(T *(*func)(const T *, const T *, const int, const int), T *arg1, T *arg2, int len1, int len2);
   int Size();

@@ -1994,14 +1994,14 @@ TEST(JobTwoParam, run_and_get_future) {
   EXPECT_EQ(out16.get(), 30.0f);
 }
 
-TEST(JobTwoParamA, initailization) {
+TEST(JobTwoArray, initailization) {
   int x[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
   float y[]{0, 1, 2, 3, 4, 5, 6, 7.5, 8, 9.125};
   int d = 10;
 
   int cons = 2;
   float cons_f = 2.125;
-  JobTwoParamA<int> test11{&ele_add_arr, x, x, d, d};
+  JobTwoArray<int> test11{&ele_add_arr, x, x, d, d};
   auto *res11 = test11.GetArg1();
   auto *res12 = test11.GetArg2();
   for (int i = 0; i < 10; i++) {
@@ -2010,7 +2010,7 @@ TEST(JobTwoParamA, initailization) {
   }
   EXPECT_EQ(test11.GetLen1(), 10);
   EXPECT_EQ(test11.GetLen2(), 10);
-  JobTwoParamA<float> test12{&ele_add_arr, y, y, d, d};
+  JobTwoArray<float> test12{&ele_add_arr, y, y, d, d};
   auto *res13 = test12.GetArg1();
   auto *res14 = test12.GetArg2();
   for (int i = 0; i < 10; i++) {
@@ -2020,22 +2020,33 @@ TEST(JobTwoParamA, initailization) {
   EXPECT_EQ(test12.GetLen1(), 10);
   EXPECT_EQ(test12.GetLen2(), 10);
 
-  JobTwoParamA<int> test9{};
+	int x_1[]{0, 1, 2, 3, 4};
+	float y_1[]{0,1,2,3,4,5,6};
+	int a = 5;
+	JobTwoArray<int> test1(&ele_add_arr, x, x_1, d, a);	
+	EXPECT_EQ(test1.GetLen1(), 10);
+	EXPECT_EQ(test1.GetLen2(), 5);
+	JobTwoArray<float> test2(&ele_add_arr, y, y_1, d, a);	
+	EXPECT_EQ(test2.GetLen1(), 10);
+	EXPECT_EQ(test2.GetLen2(), 5);
+
+
+  JobTwoArray<int> test9{};
   EXPECT_EQ(test9.GetLen1(), -1);
   EXPECT_EQ(test9.GetLen2(), -1);
-  JobTwoParamA<float> test10{};
+  JobTwoArray<float> test10{};
   EXPECT_EQ(test10.GetLen1(), -1);
   EXPECT_EQ(test10.GetLen2(), -1);
 }
 
-TEST(JobTwoParamA, move_assign) {
+TEST(JobTwoArray, move_assign) {
   int x[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
   float y[]{0, 1, 2, 3, 4, 5, 6, 7, 8.5, 9.125};
   int d = 10;
   int cons = 2;
   float cons_f = 2.125;
-  JobTwoParamA<int> test11;
-  auto temp = JobTwoParamA<int>{&ele_add_arr, x, x, d, d};
+  JobTwoArray<int> test11;
+  auto temp = JobTwoArray<int>{&ele_add_arr, x, x, d, d};
   test11 = std::move(temp);
   auto *res11 = test11.GetArg1();
   auto *res12 = test11.GetArg2();
@@ -2045,8 +2056,8 @@ TEST(JobTwoParamA, move_assign) {
   }
   EXPECT_EQ(test11.GetLen1(), 10);
   EXPECT_EQ(test11.GetLen2(), 10);
-  JobTwoParamA<float> test12;
-  auto temp2 = JobTwoParamA<float>{&ele_add_arr, y, y, d, d};
+  JobTwoArray<float> test12;
+  auto temp2 = JobTwoArray<float>{&ele_add_arr, y, y, d, d};
   test12 = std::move(temp2);
   auto *res13 = test12.GetArg1();
   auto *res14 = test12.GetArg2();
@@ -2057,25 +2068,25 @@ TEST(JobTwoParamA, move_assign) {
   EXPECT_EQ(test12.GetLen1(), 10);
   EXPECT_EQ(test12.GetLen2(), 10);
 
-  JobTwoParamA<int> test9;
-  auto temp3 = JobTwoParamA<int>{};
+  JobTwoArray<int> test9;
+  auto temp3 = JobTwoArray<int>{};
   test9 = std::move(temp3);
   EXPECT_EQ(test9.GetLen1(), -1);
   EXPECT_EQ(test9.GetLen2(), -1);
-  JobTwoParamA<float> test10;
-  auto temp4 = JobTwoParamA<float>{};
+  JobTwoArray<float> test10;
+  auto temp4 = JobTwoArray<float>{};
   test10 = std::move(temp4);
   EXPECT_EQ(test10.GetLen1(), -1);
   EXPECT_EQ(test10.GetLen2(), -1);
 }
 
-TEST(JobTwoParamA, move_constr) {
+TEST(JobTwoArray, move_constr) {
   int x[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
   float y[]{0, 1, 2, 3, 4, 5, 6, 7, 8.5, 9.125};
   int d = 10;
   int cons = 2;
   float cons_f = 2.125;
-  JobTwoParamA<int> test11 = std::move(JobTwoParamA<int>{&ele_add_arr, x, x, d, d});
+  JobTwoArray<int> test11 = std::move(JobTwoArray<int>{&ele_add_arr, x, x, d, d});
   auto *res11 = test11.GetArg1();
   auto *res12 = test11.GetArg2();
   for (int i = 0; i < 10; i++) {
@@ -2084,7 +2095,7 @@ TEST(JobTwoParamA, move_constr) {
   }
   EXPECT_EQ(test11.GetLen1(), 10);
   EXPECT_EQ(test11.GetLen2(), 10);
-  JobTwoParamA<float> test12 = std::move(JobTwoParamA<float>{&ele_add_arr, y, y, d, d});
+  JobTwoArray<float> test12 = std::move(JobTwoArray<float>{&ele_add_arr, y, y, d, d});
   auto *res13 = test12.GetArg1();
   auto *res14 = test12.GetArg2();
   for (int i = 0; i < 10; i++) {
@@ -2094,71 +2105,71 @@ TEST(JobTwoParamA, move_constr) {
   EXPECT_EQ(test12.GetLen1(), 10);
   EXPECT_EQ(test12.GetLen2(), 10);
 
-  JobTwoParamA<int> test9 = JobTwoParamA<int>{};
+  JobTwoArray<int> test9 = JobTwoArray<int>{};
   EXPECT_EQ(test9.GetLen1(), -1);
   EXPECT_EQ(test9.GetLen2(), -1);
-  JobTwoParamA<float> test10 = JobTwoParamA<float>{};
+  JobTwoArray<float> test10 = JobTwoArray<float>{};
   EXPECT_EQ(test10.GetLen1(), -1);
   EXPECT_EQ(test10.GetLen2(), -1);
 }
 
-TEST(JobTwoParamA, run) {
+TEST(JobTwoArray, run) {
   // This is just a sanity check to see that the Run method works.
   int x[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
   float y[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
   int d = 10;
   int cons = 2;
   float cons_f = 2.125;
-  JobTwoParamA<int> test13 = JobTwoParamA<int>{&ele_add_arr, x, x, d, d};
+  JobTwoArray<int> test13 = JobTwoArray<int>{&ele_add_arr, x, x, d, d};
   test13.Run();
-  JobTwoParamA<float> test14 = JobTwoParamA<float>{&ele_add_arr, y, y, d, d};
+  JobTwoArray<float> test14 = JobTwoArray<float>{&ele_add_arr, y, y, d, d};
   test14.Run();
   // Run does nothing. exists gracefully.
-  JobTwoParamA<int> test9 = JobTwoParamA<int>{};
+  JobTwoArray<int> test9 = JobTwoArray<int>{};
   test9.Run();
-  JobTwoParamA<float> test10 = JobTwoParamA<float>{};
+  JobTwoArray<float> test10 = JobTwoArray<float>{};
   test10.Run();
 }
 
-TEST(JobTwoParamA, get_future) {
+TEST(JobTwoArray, get_future) {
   // This is just a sanity check to see that the Run method works.
   int x[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
   float y[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
   int d = 10;
   int cons = 2;
   float cons_f = 2.125;
-  JobTwoParamA<int> test13 = JobTwoParamA<int>{&ele_add_arr, x, x, d, d};
+  JobTwoArray<int> test13 = JobTwoArray<int>{&ele_add_arr, x, x, d, d};
   test13.GetFuture();
-  JobTwoParamA<int> test1 = JobTwoParamA<int>{&ele_add_arr, x, x, d, d};
+  JobTwoArray<int> test1 = JobTwoArray<int>{&ele_add_arr, x, x, d, d};
   std::future<int *> out1;
   test1.GetFuture(out1);
-  JobTwoParamA<float> test2 = JobTwoParamA<float>{&ele_add_arr, y, y, d, d};
+  JobTwoArray<float> test2 = JobTwoArray<float>{&ele_add_arr, y, y, d, d};
   test2.GetFuture();
-  JobTwoParamA<float> test3 = JobTwoParamA<float>{&ele_add_arr, y, y, d, d};
+  JobTwoArray<float> test3 = JobTwoArray<float>{&ele_add_arr, y, y, d, d};
   std::future<float *> out3;
   test3.GetFuture(out3);
   // Run does nothing. exists gracefully.
-  JobTwoParamA<int> test9 = JobTwoParamA<int>{};
+  JobTwoArray<int> test9 = JobTwoArray<int>{};
   EXPECT_THROW(test9.GetFuture(), std::runtime_error);
-  JobTwoParamA<float> test10 = JobTwoParamA<float>{};
+  JobTwoArray<float> test10 = JobTwoArray<float>{};
   EXPECT_THROW(test10.GetFuture(), std::runtime_error);
 }
 
-TEST(JobTwoParamA, run_and_get_future) {
+TEST(JobTwoArray, run_and_get_future) {
   // This is just a sanity check to see that the Run method works.
   int x[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
   float y[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
   int d = 10;
   int cons = 2;
   float cons_f = 2.125;
-  JobTwoParamA<int> test1 = JobTwoParamA<int>{&ele_add_arr, x, x, d, d};
+  JobTwoArray<int> test1 = JobTwoArray<int>{&ele_add_arr, x, x, d, d};
   test1.Run();
   auto temp3 = test1.GetFuture().get();
   for (int i = 0; i < d; i++) {
     EXPECT_EQ(temp3[i], x[i] * 2);
   }
 
-  JobTwoParamA<float> test2 = JobTwoParamA<float>{&ele_add_arr, y, y, d, d};
+  JobTwoArray<float> test2 = JobTwoArray<float>{&ele_add_arr, y, y, d, d};
   test2.Run();
   auto temp4 = test2.GetFuture().get();
   for (int i = 0; i < d; i++) {
@@ -2166,24 +2177,24 @@ TEST(JobTwoParamA, run_and_get_future) {
   }
 }
 
-TEST(JobOneParamA, initialization) {
+TEST(JobOneArray, initialization) {
   int x[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
   float y[]{0, 1, 2, 3, 4, 5, 6, 7.5, 8, 9.125};
   int d = 10;
 
-  JobOneParamA<int> test5{};
+  JobOneArray<int> test5{};
   EXPECT_EQ(test5.GetArg1(), nullptr);
-  JobOneParamA<float> test6{};
+  JobOneArray<float> test6{};
   EXPECT_EQ(test6.GetArg1(), nullptr);
   int cons = 2;
   float cons_f = 2.125;
-  JobOneParamA<int> test13{&simp_add_arr, x, d};
+  JobOneArray<int> test13{&simp_add_arr, x, d};
   auto *res15 = test13.GetArg1();
   for (int i = 0; i < 10; i++) {
     EXPECT_EQ(res15[i], x[i]);
   }
   EXPECT_EQ(test13.GetLen1(), 10);
-  JobOneParamA<float> test14{&simp_add_arr, y, d};
+  JobOneArray<float> test14{&simp_add_arr, y, d};
   auto *res16 = test14.GetArg1();
   for (int i = 0; i < 10; i++) {
     EXPECT_EQ(res16[i], y[i]);
@@ -2191,22 +2202,22 @@ TEST(JobOneParamA, initialization) {
   EXPECT_EQ(test14.GetLen1(), 10);
 }
 
-TEST(JobOneParamA, move_assign) {
+TEST(JobOneArray, move_assign) {
   int x[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
   float y[]{0, 1, 2, 3, 4, 5, 6, 7, 8.5, 9.125};
   int d = 10;
   int cons = 2;
   float cons_f = 2.125;
-  JobOneParamA<int> test11;
-  auto temp = JobOneParamA<int>{&simp_add_arr, x, d};
+  JobOneArray<int> test11;
+  auto temp = JobOneArray<int>{&simp_add_arr, x, d};
   test11 = std::move(temp);
   auto *res11 = test11.GetArg1();
   for (int i = 0; i < 10; i++) {
     EXPECT_EQ(res11[i], x[i]);
   }
   EXPECT_EQ(test11.GetLen1(), 10);
-  JobOneParamA<float> test12;
-  auto temp2 = JobOneParamA<float>{&simp_add_arr, y, d};
+  JobOneArray<float> test12;
+  auto temp2 = JobOneArray<float>{&simp_add_arr, y, d};
   test12 = std::move(temp2);
   auto *res13 = test12.GetArg1();
   for (int i = 0; i < 10; i++) {
@@ -2214,99 +2225,99 @@ TEST(JobOneParamA, move_assign) {
   }
   EXPECT_EQ(test12.GetLen1(), 10);
 
-  JobOneParamA<int> test9;
-  auto temp3 = JobOneParamA<int>{};
+  JobOneArray<int> test9;
+  auto temp3 = JobOneArray<int>{};
   test9 = std::move(temp3);
   EXPECT_EQ(test9.GetLen1(), -1);
-  JobOneParamA<float> test10;
-  auto temp4 = JobOneParamA<float>{};
+  JobOneArray<float> test10;
+  auto temp4 = JobOneArray<float>{};
   test10 = std::move(temp4);
   EXPECT_EQ(test10.GetLen1(), -1);
 }
 
-TEST(JobOneParamA, move_constr) {
+TEST(JobOneArray, move_constr) {
   int x[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
   float y[]{0, 1, 2, 3, 4, 5, 6, 7, 8.5, 9.125};
   int d = 10;
   int cons = 2;
   float cons_f = 2.125;
-  JobOneParamA<int> test11 = std::move(JobOneParamA<int>{&simp_add_arr, x, d});
+  JobOneArray<int> test11 = std::move(JobOneArray<int>{&simp_add_arr, x, d});
   auto *res11 = test11.GetArg1();
   for (int i = 0; i < 10; i++) {
     EXPECT_EQ(res11[i], x[i]);
   }
   EXPECT_EQ(test11.GetLen1(), 10);
-  JobOneParamA<float> test12 = std::move(JobOneParamA<float>{&simp_add_arr, y, d});
+  JobOneArray<float> test12 = std::move(JobOneArray<float>{&simp_add_arr, y, d});
   auto *res13 = test12.GetArg1();
   for (int i = 0; i < 10; i++) {
     EXPECT_EQ(res13[i], y[i]);
   }
   EXPECT_EQ(test12.GetLen1(), 10);
 
-  JobOneParamA<int> test9 = std::move(JobOneParamA<int>{});
+  JobOneArray<int> test9 = std::move(JobOneArray<int>{});
   EXPECT_EQ(test9.GetLen1(), -1);
-  JobOneParamA<float> test10 = std::move(JobOneParamA<float>{});
+  JobOneArray<float> test10 = std::move(JobOneArray<float>{});
   EXPECT_EQ(test10.GetLen1(), -1);
 }
 
-TEST(JobOneParamA, run) {
+TEST(JobOneArray, run) {
   // This is just a sanity check to see that the Run method works.
   int x[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
   float y[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
   int d = 10;
   int cons = 2;
   float cons_f = 2.125;
-  JobOneParamA<int> test11 = std::move(JobOneParamA<int>{&simp_add_arr, x, d});
+  JobOneArray<int> test11 = std::move(JobOneArray<int>{&simp_add_arr, x, d});
   test11.Run();
-  JobOneParamA<float> test12 = std::move(JobOneParamA<float>{&simp_add_arr, y, d});
+  JobOneArray<float> test12 = std::move(JobOneArray<float>{&simp_add_arr, y, d});
   test12.Run();
   // Run does nothing. exists gracefully.
-  JobOneParamA<int> test9 = JobOneParamA<int>{};
+  JobOneArray<int> test9 = JobOneArray<int>{};
   test9.Run();
-  JobOneParamA<float> test10 = JobOneParamA<float>{};
+  JobOneArray<float> test10 = JobOneArray<float>{};
   test10.Run();
 }
 
 
-TEST(JobOneParamA, get_future) {
+TEST(JobOneArray, get_future) {
   // This is just a sanity check to see that the Run method works.
   int x[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
   float y[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
   int d = 10;
   int cons = 2;
   float cons_f = 2.125;
-  JobOneParamA<int> test11 = std::move(JobOneParamA<int>{&simp_add_arr, x, d});
+  JobOneArray<int> test11 = std::move(JobOneArray<int>{&simp_add_arr, x, d});
   test11.GetFuture();
-  JobOneParamA<int> test1 = std::move(JobOneParamA<int>{&simp_add_arr, x, d});
+  JobOneArray<int> test1 = std::move(JobOneArray<int>{&simp_add_arr, x, d});
   std::future<int *> out1;
   test1.GetFuture(out1);
-  JobOneParamA<float> test2 = std::move(JobOneParamA<float>{&simp_add_arr, y, d});
+  JobOneArray<float> test2 = std::move(JobOneArray<float>{&simp_add_arr, y, d});
   test2.GetFuture();
-  JobOneParamA<float> test3 = std::move(JobOneParamA<float>{&simp_add_arr, y, d});
+  JobOneArray<float> test3 = std::move(JobOneArray<float>{&simp_add_arr, y, d});
   std::future<float *> out3;
   test3.GetFuture(out3);
   // Run does nothing. exists gracefully.
-  JobTwoParamA<int> test9 = JobTwoParamA<int>{};
+  JobOneArray<int> test9 = JobOneArray<int>{};
   EXPECT_THROW(test9.GetFuture(), std::runtime_error);
-  JobTwoParamA<float> test10 = JobTwoParamA<float>{};
+  JobOneArray<float> test10 = JobOneArray<float>{};
   EXPECT_THROW(test10.GetFuture(), std::runtime_error);
 }
 
-TEST(JobOneParamA, run_and_get_future) {
+TEST(JobOneArray, run_and_get_future) {
   // This is just a sanity check to see that the Run method works.
   int x[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
   float y[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
   int d = 10;
   int cons = 2;
   float cons_f = 2.125;
-  JobOneParamA<int> test1 = std::move(JobOneParamA<int>{&simp_add_arr, x, d});
+  JobOneArray<int> test1 = std::move(JobOneArray<int>{&simp_add_arr, x, d});
   test1.Run();
   auto temp3 = test1.GetFuture().get();
   for (int i = 0; i < d; i++) {
     EXPECT_EQ(temp3[i], x[i] + 2);
   }
 
-  JobOneParamA<float> test2 = std::move(JobOneParamA<float>{&simp_add_arr, y, d});
+  JobOneArray<float> test2 = std::move(JobOneArray<float>{&simp_add_arr, y, d});
   test2.Run();
   auto temp4 = test2.GetFuture().get();
   for (int i = 0; i < d; i++) {
