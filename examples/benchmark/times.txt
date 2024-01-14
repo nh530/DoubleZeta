@@ -22,3 +22,55 @@ Number of tasks: 10000000
 Number of Summations: 1000
 130683
 27489.9
+Number of tasks: 10000000
+Number of Summations: 1000
+131196
+28632.4
+Number of tasks: 10000000
+Number of Summations: 100
+13037.9
+38185.8
+Number of tasks: 10000000
+Number of Summations: 10000
+1.34499e+06
+215923
+Number of tasks: 100
+Number of Summations: 2
+0.0027399
+0.414006
+Number of tasks: 1000
+Number of Summations: 2
+0.0314247
+5.25417
+Number of tasks: 1000
+Number of Summations: 2
+0.023336
+4.23433
+Number of tasks: 100
+Number of Summations: 10
+0.0159067
+0.414058
+Number of tasks: 100
+Number of Summations: 100
+0.186273
+0.519351
+Number of tasks: 100
+Number of Summations: 1000
+1.98345
+1.67116
+Number of tasks: 1000
+Number of Summations: 1000
+18.7865
+5.27746
+Number of tasks: 1000
+Number of Summations: 1000
+17.0261
+6.12659
+Number of tasks: 100
+Number of Summations: 500
+0.914618
+0.540715
+Number of tasks: 10
+Number of Summations: 500
+0.0869432
+0.0676645

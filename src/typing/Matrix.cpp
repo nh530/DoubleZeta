@@ -1,6 +1,8 @@
 #include "Matrix.h"
+#include "algba_cmd/Algebra.h"
 #include "typing/exceptions.h"
 #include <iostream>
+#include <list>
 float _vector_dotproduct(std::vector<float> left, std::vector<float> right) {
   /* Computes the dot product of two vectors that are the same size.
    *
@@ -19,10 +21,32 @@ float _vector_dotproduct(std::vector<float> left, std::vector<float> right) {
 
   return out;
 }
-
+void vector_to_arr(std::vector<float> vec, float *out) {
+  for (int i = 0; i < vec.size(); i++) {
+    out[i] = vec[i];
+  }
+}
+ZetaSession Matrix::_worker = ZetaSession(-1);
 Matrix::Matrix() {
   // Default constructor; Initialize nothing.
 }
+Matrix::Matrix(int rows, int cols) : _rows{rows}, _cols{cols} {
+  // Defaults value implicit from header file.
+  // # TODO: throw error if pass 0 rows 0 cols.
+  // CAUTION: This constructor leads to undefined behavior if values in array are not set.
+  // TODO: Maybe it will be best to hide this constructor from User.
+  if (rows == 0)
+    throw std::invalid_argument("The number of rows cannot be 0!");
+  if (cols == 0)
+    throw std::invalid_argument("The number of columns canot be 0!");
+  shape[0] = _rows;
+  shape[1] = _cols;
+  for (int i = 0; i < _rows; i++) {
+    float *temp = new float[_cols];
+    _container.push_back(std::move(temp)); // Initialize vectors of numbers represented by def_val
+  }
+}
+
 Matrix::Matrix(int rows, int cols, float def_val) : _rows{rows}, _cols{cols} {
   // Defaults value implicit from header file.
   // # TODO: throw error if pass 0 rows 0 cols.
@@ -53,6 +77,7 @@ Matrix::Matrix(float **array, int rows, int cols) : _rows{rows}, _cols{cols} { /
       _container[i][j] = array[i][j];
     }
   }
+
   shape[0] = _rows;
   shape[1] = _cols;
 }
@@ -65,7 +90,7 @@ Matrix::Matrix(const Matrix &other) {
     float *temp = new float[_cols]{0};
     _container.push_back(temp);
     for (int j = 0; j < _cols; j++) {
-      _container[i][j] = other[i][j];
+      _container[i][j] = other._container[i][j];
     }
   }
 }
@@ -88,14 +113,14 @@ Matrix::~Matrix() {
   // Implicitly calls destructor for _contrainer.
   // Don't need to call delete on shape array.
 }
-float *Matrix::operator[](int i) {
+float const *const &Matrix::operator[](int i) {
   if (i > _rows)
     throw std::invalid_argument("Index out of bounds!");
   else if (i < 0)
     throw std::invalid_argument("Index out of bounds!");
   return _container[i];
 }
-const float *Matrix::operator[](int i) const {
+float const *const &Matrix::operator[](int i) const {
   // vector returned to caller cannot be modified by caller.
   if (i > _rows)
     throw std::invalid_argument("Index out of bounds!");
@@ -103,6 +128,13 @@ const float *Matrix::operator[](int i) const {
     throw std::invalid_argument("Index out of bounds!");
 
   return _container[i];
+}
+void Matrix::set_value(int r, int c, float val) { _container[r][c] = val; }
+float &Matrix::get_value(int r, int c) { return _container[r][c]; }
+void Matrix::set_value(int r, float *row) {
+  // row should be a float array instantiated on heap.
+  delete _container[r];
+  _container[r] = row;
 }
 Matrix &Matrix::operator=(const Matrix &other) {
   _container.clear();
@@ -115,6 +147,7 @@ Matrix &Matrix::operator=(const Matrix &other) {
       _container[i][j] = other[i][j];
     }
   }
+
   return *this;
 }
 Matrix &Matrix::operator=(Matrix &&other) {
@@ -157,12 +190,21 @@ Matrix operator+(const Matrix &a, const Matrix &b) {
     return Matrix{0, 0}; // empty matrix
   }
   Matrix out{a.shape[0], a.shape[1]};
+  std::vector<Status<float> *> items;
   for (int i = 0; i < a.shape[0]; i++) {
-    for (int j = 0; j < a.shape[1]; j++) {
-      out[i][j] = a[i][j] + b[i][j];
-    }
+    Status<float> *temp = new Status<float>(out._worker.SubmitTask(&arr_op_sum, a[i], b[i], a.shape[1], b.shape[1]));
+    items.push_back(temp);
   }
-  return out;
+  int i = 0;
+  for (auto const &ele : items) {
+    std::future<float *> temp = ele->GetFuturePtr();
+    temp.wait();
+    out.set_value(i, temp.get());
+    i++;
+    delete ele;
+  }
+  items.clear();
+  return std::move(out);
 }
 Matrix operator-(const Matrix &a, const Matrix &b) {
   // Element-wise subtract two matrices.
@@ -173,12 +215,21 @@ Matrix operator-(const Matrix &a, const Matrix &b) {
     return Matrix{0, 0}; // empty matrix
   }
   Matrix out{a.shape[0], a.shape[1]};
+  std::list<Status<float> *> items;
   for (int i = 0; i < a.shape[0]; i++) {
-    for (int j = 0; j < a.shape[1]; j++) {
-      out[i][j] = a[i][j] - b[i][j];
-    }
+    Status<float> *temp = new Status<float>(out._worker.SubmitTask(&arr_op_sub, a[i], b[i], a.shape[1], b.shape[1]));
+    items.push_back(temp);
   }
-  return out;
+  int i = 0;
+  for (auto const &ele : items) {
+    std::future<float *> temp = ele->GetFuturePtr();
+    temp.wait();
+    out.set_value(i, temp.get());
+    i++;
+    delete ele;
+  }
+  items.clear();
+  return std::move(out);
 }
 
 Matrix operator*(const Matrix &a, const Matrix &b) {
@@ -199,16 +250,56 @@ Matrix operator*(const Matrix &a, const Matrix &b) {
   int l_cols = a.shape[1];
   int r_rows = b.shape[0];
   int r_cols = b.shape[1];
-
+  const Matrix int_mat = b.transpose();
+  std::list<Status<float> *> items;
   for (int i = 0; i < l_rows; i++) {
     for (int j = 0; j < r_cols; j++) {
-      out[i][j] = _vector_dotproduct(std::vector<float>(a[i], a[i] + a.shape[1]), b.getColumn(j));
+      Status<float> *temp = new Status<float>(a._worker.SubmitTask(&arr_op_dot_prod, a[i], int_mat[j], l_cols, r_rows));
+      items.push_back(temp);
     }
   }
-
-  return out;
+  for (int i = 0; i < l_rows; i++) {
+    for (int j = 0; j < r_cols; j++) {
+      std::future<float *> temp = items.front()->GetFuturePtr(); // pop_front is constant time.
+      temp.wait();
+      out.set_value(i, j, (*temp.get()));
+      delete items.front();
+      items.pop_front();
+    }
+  }
+  for (auto const &ele : items) {
+    delete ele;
+  }
+  items.clear();
+  return std::move(out);
 }
 
+Matrix operator*(const float &a, const Matrix &b) {
+  // Multiply the matrice by a scalar a.
+  if (b.shape[0] == 0 && b.shape[1] == 0) {
+    return Matrix{0, 0}; // empty matrix
+  }
+
+  Matrix out{b.shape[0], b.shape[1]};
+  int r_rows = b.shape[0];
+  int r_cols = b.shape[1];
+
+  std::vector<Status<float> *> items;
+  for (int i = 0; i < r_rows; i++) {
+    Status<float> *temp = new Status<float>(b._worker.SubmitTask(&arr_op_mul_c, b[i], b.shape[1], a));
+    items.push_back(temp);
+  }
+  int i = 0;
+  for (auto const &ele : items) {
+    std::future<float *> temp = ele->GetFuturePtr();
+    temp.wait();
+    out.set_value(i, temp.get());
+    i++;
+    delete ele;
+  }
+  items.clear();
+  return std::move(out);
+}
 Matrix operator*(const int &a, const Matrix &b) {
   // Multiply the matrice by a scalar a.
   if (b.shape[0] == 0 && b.shape[1] == 0) {
@@ -221,29 +312,11 @@ Matrix operator*(const int &a, const Matrix &b) {
 
   for (int i = 0; i < r_rows; i++) {
     for (int j = 0; j < r_cols; j++) {
-      out[i][j] = a * b[i][j];
+      out.set_value(i, j, (a * b[i][j]));
     }
   }
 
-  return out;
-}
-Matrix operator*(const float &a, const Matrix &b) {
-  // Multiply the matrice by a scalar a.
-  if (b.shape[0] == 0 && b.shape[1] == 0) {
-    return Matrix{0, 0}; // empty matrix
-  }
-
-  Matrix out{b.shape[0], b.shape[1]};
-  int r_rows = b.shape[0];
-  int r_cols = b.shape[1];
-
-  for (int i = 0; i < r_rows; i++) {
-    for (int j = 0; j < r_cols; j++) {
-      out[i][j] = a * b[i][j];
-    }
-  }
-
-  return out;
+  return std::move(out);
 }
 Matrix operator*(const Matrix &b, const int &a) { return a * b; }
 Matrix operator*(const Matrix &b, const float &a) { return a * b; }
@@ -280,44 +353,69 @@ bool operator!=(const Matrix &a, const Matrix &b) {
   return false;
 }
 
-Matrix Matrix::operator+=(const Matrix other) {
+Matrix Matrix::operator+=(const Matrix &other) {
   if ((*this).shape[0] != other.shape[0] || (*this).shape[1] != other.shape[1]) {
     throw std::invalid_argument("Shape mismatch between left and right Matrices");
   }
   if ((*this).shape[0] == 0 && (*this).shape[1] == 0) {
     return *this;
   }
-
+  std::vector<Status<float> *> items;
   for (int i = 0; i < (*this).shape[0]; i++) {
-    for (int j = 0; j < (*this).shape[1]; j++) {
-      (*this)[i][j] = (*this)[i][j] + other[i][j];
-    }
+    Status<float> *temp = new Status<float>((*this)._worker.SubmitTask(&arr_op_sum, (*this)[i], other[i], (*this).shape[1], other.shape[1]));
+    items.push_back(temp);
   }
-  return *this;
+  int i = 0;
+  for (auto const &ele : items) {
+    std::future<float *> temp = ele->GetFuturePtr();
+    temp.wait();
+    (*this).set_value(i, temp.get());
+    i++;
+    delete ele;
+  }
+  items.clear();
+  return std::move(*this);
 }
-Matrix Matrix::operator-=(const Matrix other) {
+Matrix Matrix::operator-=(const Matrix &other) {
   if ((*this).shape[0] != other.shape[0] || (*this).shape[1] != other.shape[1]) {
     throw std::invalid_argument("Shape mismatch between left and right Matrices");
   }
   if ((*this).shape[0] == 0 && (*this).shape[1] == 0) {
     return *this;
   }
-
+  std::list<Status<float> *> items;
   for (int i = 0; i < (*this).shape[0]; i++) {
-    for (int j = 0; j < (*this).shape[1]; j++) {
-      (*this)[i][j] = (*this)[i][j] - other[i][j];
+    Status<float> *temp = new Status<float>((*this)._worker.SubmitTask(&arr_op_sub, (*this)[i], other[i], (*this).shape[1], other.shape[1]));
+    items.push_back(temp);
+  }
+  int i = 0;
+  for (auto const &ele : items) {
+    std::future<float *> temp = ele->GetFuturePtr();
+    temp.wait();
+    (*this).set_value(i, temp.get());
+    i++;
+    delete ele;
+  }
+  items.clear();
+  return std::move(*this);
+}
+Matrix Matrix::transpose() const {
+  Matrix out(_cols, _rows);
+  for (int i = 0; i < (*this)._rows; i++) {
+    for (int j = 0; j < (*this)._cols; j++) {
+      out.set_value(j, i, _container[i][j]);
     }
   }
-  return *this;
+  return std::move(out);
 }
 Matrix Matrix::transpose() {
   Matrix out(_cols, _rows);
   for (int i = 0; i < (*this)._rows; i++) {
     for (int j = 0; j < (*this)._cols; j++) {
-      out[j][i] = _container[i][j];
+      out.set_value(j, i, _container[i][j]);
     }
   }
-  return out;
+  return std::move(out);
 }
 
 void Matrix::print() {
