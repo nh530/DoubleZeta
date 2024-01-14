@@ -19,7 +19,7 @@ std::chrono::duration<double, std::milli> base_trial() {
   arr_init_(vec_b, 4904.111f);
   std::vector<float *> items;
   auto ti1 = std::chrono::high_resolution_clock::now();
-  Matrix out{N_ROWS, N_COLS};
+  Matrix<float> out{N_ROWS, N_COLS};
   for (int i = 0; i < N_ROWS; i++) {
     float *out = arr_op_sum(vec_a, vec_b, N_COLS, N_COLS);
     items.push_back(out);
@@ -39,16 +39,16 @@ std::chrono::duration<double, std::milli> base_trial() {
 }
 
 std::chrono::duration<double, std::milli> benchmark() {
-  Matrix a(N_ROWS, N_COLS, 1.1f);
-  Matrix b(N_ROWS, N_COLS, 4904.111f);
+  Matrix<float> a(N_ROWS, N_COLS, 1.1f);
+  Matrix<float> b(N_ROWS, N_COLS, 4904.111f);
   auto t1 = std::chrono::high_resolution_clock::now();
   a += b;
   auto t2 = std::chrono::high_resolution_clock::now();
   return std::chrono::duration<double, std::milli>{t2 - t1};
 }
 std::chrono::duration<double, std::milli> benchmark2() {
-  Matrix a(N_ROWS, N_COLS, 1.1f);
-  Matrix b(N_ROWS, N_COLS, 4904.111f);
+  Matrix<float> a(N_ROWS, N_COLS, 1.1f);
+  Matrix<float> b(N_ROWS, N_COLS, 4904.111f);
   auto t1 = std::chrono::high_resolution_clock::now();
   auto out = a + b;
   auto t2 = std::chrono::high_resolution_clock::now();

@@ -13,17 +13,17 @@ float **array__init__() {
 
 int main() {
   float **nums = array__init__();
-  Matrix _A = Matrix(nums, 3, 3);
+  Matrix<float> _A = Matrix<float>(nums, 3, 3);
 
-  Matrix obs{3, 1, 1};
-  obs[0][0] = 10;
-  obs[1][0] = 20;
-  obs[2][0] = 30;
+  Matrix<float> obs{3, 1, 1};
+  obs.set_value(0,0, 10);
+  obs.set_value(1,0, 20);
+  obs.set_value(2,0, 30);
 
-  Matrix y_obs{3, 1};
-  y_obs[0][0] = 11;
-  y_obs[1][0] = 25;
-  y_obs[2][0] = 32;
+  Matrix<float> y_obs{3, 1};
+  y_obs.set_value(0,0,11);
+  y_obs.set_value(1,0,25);
+  y_obs.set_value(2,0,32);
   LinearRegression model = LinearRegression(.00011, 1.0, false);
   model.fit(obs, y_obs);
   std::cout << model.get_parameters()[0] << '\t' << model.get_parameters()[1] << '\n';

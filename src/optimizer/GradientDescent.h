@@ -1,3 +1,5 @@
+#ifndef GRADIENTDESCENT_H
+#define GRADIENTDESCENT_H
 #include "typing/DTypes.h"
 #include "typing/Matrix.h"
 #include <functional>
@@ -5,26 +7,24 @@
 #include <variant>
 #include <vector>
 
-#ifndef GRADIENTDESCENT_H
-#define GRADIENTDESCENT_H
-
 class LossF {
 public:
   virtual float objective_func(std::vector<float> &y_pred, std::vector<float> &y_act) = 0;
-  virtual float objective_func(Matrix &y_pred, Matrix &y_act) = 0;
+  virtual float objective_func(Matrix<float> &y_pred, Matrix<float> &y_act) = 0;
 };
 
 class MeanSquaredError : public LossF {
 public:
   MeanSquaredError();
-  float objective_func(std::vector<float> &y_pred, std::vector<float> &y_act);
-  float objective_func(Matrix &y_pred, Matrix &y_act);
+  float objective_func(std::vector<float> &y_pred, std::vector<float> &y_act) override;
+  float objective_func(Matrix<float> &y_pred, Matrix<float> &y_act) override;
 };
 
 class BinaryCrossEntropy : public LossF {
 public:
   BinaryCrossEntropy();
-  float objective_func(std::vector<float> &y_pred, std::vector<float> &y_act);
+  float objective_func(std::vector<float> &y_pred, std::vector<float> &y_act) override;
+  float objective_func(Matrix<float> &y_pred, Matrix<float> &y_act) override;
 };
 
 class GradientDescent {
@@ -33,11 +33,12 @@ class GradientDescent {
 
 public:
   GradientDescent(float, float);
-  Matrix optimize(std::function<Matrix(Matrix &, Matrix &, Matrix &)>, Matrix &x, Matrix &y, const Matrix &init_weights = {1, 1, 0});
+  Matrix<float> optimize(std::function<Matrix<float>(Matrix<float> &, Matrix<float> &, Matrix<float> &)>, Matrix<float> &x, Matrix<float> &y,
+                         const Matrix<float> &init_weights = {1, 1, 0});
   // Gradient function with respect to the input weights vector x.
   // A 1 by 1 matrix of 0 is used as the sentinel value to signal the algorithm to generate its own initial weight.
 private:
-  Matrix _set_initial(int rows, int cols, int seed = 100);
+  Matrix<float> _set_initial(int rows, int cols, int seed = 100);
   FRIEND_TEST(GradientDescentTest, set_initial); // For google unit-test framework.
 };
 

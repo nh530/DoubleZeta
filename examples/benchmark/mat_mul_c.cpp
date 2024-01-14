@@ -19,7 +19,7 @@ std::chrono::duration<double, std::milli> base_trial() {
   arr_init_(vec_a, 4904.111f);
   auto ti1 = std::chrono::high_resolution_clock::now();
   std::vector<float *> items;
-  Matrix out{N_ROWS, N_COLS};
+  Matrix<float> out{N_ROWS, N_COLS};
   for (int i = 0; i < N_ROWS; i++) {
     float *out = arr_op_mul_c(vec_a, N_COLS, 2.0f);
     items.push_back(out);
@@ -39,14 +39,14 @@ std::chrono::duration<double, std::milli> base_trial() {
 }
 
 std::chrono::duration<double, std::milli> benchmark() {
-  Matrix b(N_ROWS, N_COLS, 4904.111f);
+  Matrix<float> b(N_ROWS, N_COLS, 4904.111f);
   auto t1 = std::chrono::high_resolution_clock::now();
   auto out = b * 2.0f;
   auto t2 = std::chrono::high_resolution_clock::now();
   return std::chrono::duration<double, std::milli>{t2 - t1};
 }
 std::chrono::duration<double, std::milli> benchmark2() {
-  Matrix b(N_ROWS, N_COLS, 4904.111f);
+  Matrix<float> b(N_ROWS, N_COLS, 4904.111f);
   auto t1 = std::chrono::high_resolution_clock::now();
   auto out = 2.0f * b;
   auto t2 = std::chrono::high_resolution_clock::now();

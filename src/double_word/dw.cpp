@@ -412,7 +412,7 @@ dbl_wrd dbl_wrd::sloppy_div(const dbl_wrd &a, const dbl_wrd &b) {
 }
 
 dbl_wrd dbl_wrd::accurate_div(const dbl_wrd &a, const dbl_wrd &b) {
-	/* double-double / double-double
+  /* double-double / double-double
    *
    * Relative error is upper bounded by $15*2^-106 + 56 * 2^{-159}$.
    *

@@ -8,6 +8,7 @@
 
 template <typename T> constexpr bool is_float() { return std::is_floating_point_v<T>; }
 template <typename T> constexpr bool is_int() { return std::numeric_limits<T>::is_integer; }
+template <typename T> constexpr bool is_bool() {return std::is_same<T, bool>::value; }
 
 using NumericVariant = std::variant<float, int>;
 template <typename T> struct is_numerc_variant : public std::false_type {};
@@ -18,6 +19,9 @@ concept int_or_float = is_float<T>() || is_int<T>();
 
 template <typename T>
 concept Numeric = is_float<T>() || is_int<T>() || is_numerc_variant<T>::value;
+
+template <typename T>
+concept DataType = is_float<T>() || is_int<T>() || is_bool<T>(); // Specifies the "matrix data type".
 
 class MeanSquaredError;
 class BinaryCrossEntropy;

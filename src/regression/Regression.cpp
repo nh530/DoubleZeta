@@ -6,8 +6,8 @@ LinearRegression::LinearRegression(float step_size, float tolerance, bool fit_in
   _fit_flag = false;
 }
 
-Matrix LinearRegression::gradient(Matrix &weights, Matrix &x, Matrix &y) {
-  Matrix out;
+Matrix<float> LinearRegression::gradient(Matrix<float> &weights, Matrix<float> &x, Matrix<float> &y) {
+  Matrix<float> out;
   out = (2 * x.transpose() * x * weights) - (2 * x.transpose() * y);
   return out;
 }
@@ -15,11 +15,11 @@ Matrix LinearRegression::gradient(Matrix &weights, Matrix &x, Matrix &y) {
 float LinearRegression::score() {
   if (!_fit_flag)
     throw InvalidModel("The model has not been fit yet!");
-  Matrix y_pred = this->predict(x_obs);
+  Matrix<float> y_pred = this->predict(x_obs);
   return objective->objective_func(y_obs, y_pred);
 }
 
-Matrix LinearRegression::predict(Matrix &x) {
+Matrix<float> LinearRegression::predict(Matrix<float> &x) {
   if (!_fit_flag)
     throw InvalidModel("The model has not yet been fit!");
   return _A.transpose() * x;
@@ -27,40 +27,47 @@ Matrix LinearRegression::predict(Matrix &x) {
 
 float LinearRegression::predict(float x) {
   if (!_fit_flag)
-    throw InvalidModel();
-  return (_A * x)[0][0];
+    throw InvalidModel("The model has not yet been fit!");
+  Matrix<float> m_x{1, 1, x};
+  return (_A * m_x)[0][0];
 }
 
-float LinearRegression::get_intercept() { return _A[0][_A.shape[1]]; }
+float LinearRegression::get_intercept() {
+  if (!_fit_flag)
+    throw InvalidModel("The model has not yet been fit!");
+  return _A[0][_A.shape[1]];
+}
 
 std::vector<float> LinearRegression::get_parameters() {
   if (!_fit_flag)
     throw InvalidModel("The model has not yet been fit!");
-	float *temp = _A.transpose()[0]; // Pointer to existing object. Nothing new being created.
+  const float *temp = _A.transpose()[0]; // Pointer to existing object. Nothing new being created.
   return std::vector<float>{temp, temp + (_A.transpose().shape[1])};
 }
 
 void LinearRegression::print() {
+  if (!_fit_flag)
+    throw InvalidModel("The model has not yet been fit!");
   for (int i = 0; i < _A.shape[0]; i++) {
     std::cout << "coef_" << i << ": " << _A[i][0] << '\t';
   }
-	std::cout << '\n';
+  std::cout << '\n';
 }
 
-void LinearRegression::_verify_model(Matrix &x, Matrix &y) {
+void LinearRegression::_verify_model(Matrix<float> &x, Matrix<float> &y) {
   // TODO: Verify assumptions hold.
   if (y.shape[0] < 30)
     throw InvalidModel("There should be more than 30 records to train the model.");
 }
 
-Matrix LinearRegression::_prep_train_data(Matrix &x) {
+Matrix<float> LinearRegression::_prep_train_data(Matrix<float> &x) {
   // Add a column of 1's to the right most side of the matrix. This represents the intercept.
-  Matrix out{x.shape[0], x.shape[1] + 1, 1.0};
+  Matrix<float> out{x.shape[0], x.shape[1] + 1, 1.0};
 
   if (_fit_intercept) {
     for (int i = 0; i < x.shape[0]; i++) {
       for (int j = 0; j < x.shape[1]; j++) {
-        out[i][j] = x[i][j];
+        out.set_value(i, j, x[i][j]);
       }
     }
   }
@@ -68,13 +75,13 @@ Matrix LinearRegression::_prep_train_data(Matrix &x) {
   return out;
 }
 
-void LinearRegression::fit(Matrix &x, Matrix &y) {
+void LinearRegression::fit(Matrix<float> &x, Matrix<float> &y) {
   /* Executes gradient descent to determine the optimal weights for the Linear Regression model for the observed input dataset.
    * */
-  std::function<Matrix(Matrix &, Matrix &, Matrix &)> new_grad =
+  std::function<Matrix<float>(Matrix<float> &, Matrix<float> &, Matrix<float> &)> new_grad =
       std::bind(&LinearRegression::gradient, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
   if (_fit_intercept) {
-    Matrix new_x = _prep_train_data(x);
+    Matrix<float> new_x = _prep_train_data(x);
     _A = optimizer->optimize(new_grad, new_x, y); // Returns the most optimal weights.
   } else {
     _A = optimizer->optimize(new_grad, x, y);

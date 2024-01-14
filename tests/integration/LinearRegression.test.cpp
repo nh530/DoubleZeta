@@ -1,3 +1,8 @@
+/* The collection of integration tests for Linear Regression API are expected to take longer to complete and will test multiple underlying features working together in unison to produce an output.
+ * For example, a test might be a test on how well the model performs and the validity of the model when training on larger amounts of data.
+ *
+ * */
+
 #include "regression/Regression.h"
 #include "typing/Matrix.h"
 #include <gtest/gtest.h>
@@ -5,7 +10,7 @@
 #include <stdexcept>
 #include <vector>
 
-TEST(LinearRegressionTest, coefficients) {
+TEST(LinearRegressionTest, integration_test) {
   Matrix obs{3, 1, 1};
   obs[0][0] = 10;
   obs[1][0] = 20;

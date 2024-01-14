@@ -131,6 +131,7 @@ private:
   friend bool operator!=(const dbl_wrd &a, const dbl_wrd &b);
 
   friend dbl_wrd mul_pwr2(const dbl_wrd &dd, double d);
+	// TODO: The transcendental functions are not tested.
   friend dbl_wrd log(const dbl_wrd &a);
   friend dbl_wrd exp(const dbl_wrd &a);
   friend dbl_wrd inv(const dbl_wrd &a); // computes the inverse of a number.

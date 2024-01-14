@@ -70,8 +70,8 @@ std::chrono::duration<double, std::milli> benchmark2() {
 }
 
 std::chrono::duration<double, std::milli> benchmark() {
-  Matrix a(N_ROWS, N_COLS, 1);
-  Matrix b(N_ROWS, N_COLS, 2);
+  Matrix<float> a(N_ROWS, N_COLS, 1);
+  Matrix<float> b(N_ROWS, N_COLS, 2);
   auto t1 = std::chrono::high_resolution_clock::now();
   auto out = a * b; // dot product
   auto t2 = std::chrono::high_resolution_clock::now();

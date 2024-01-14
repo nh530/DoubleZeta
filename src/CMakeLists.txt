@@ -18,7 +18,7 @@ set(
 	TYPING_FILES 
 	${TYPING_DIR}/DTypes.h
 	${TYPING_DIR}/exceptions.cpp
-	${TYPING_DIR}/Matrix.cpp
+	${TYPING_DIR}/Matrix.tpp
 )
 set(
 	REGRESSION_FILES 
