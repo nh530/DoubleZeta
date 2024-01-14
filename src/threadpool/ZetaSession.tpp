@@ -141,13 +141,14 @@ template <Numeric T> inline Status<T> ZetaSession::SubmitTask(T (*func)(const T,
   return Status<T>(task);
 }
 
-template <Numeric T> inline Status<T> ZetaSession::SubmitTask(T *(*func)(const T *, const int), T *arg1, int len1) {
+template <Numeric T> inline Status<T> ZetaSession::SubmitTask(T *(*func)(const T *, const int), T const *arg1, int len1) {
   JobOneArray<T> *task = new JobOneArray<T>{func, arg1, len1};
   pool.QueueJob(*task);
   return Status<T>(task);
 }
 
-template <Numeric T> inline Status<T> ZetaSession::SubmitTask(T *(*func)(const T *, const T *, const int, const int), T *arg1, T *arg2, int len1, int len2) {
+template <Numeric T>
+inline Status<T> ZetaSession::SubmitTask(T *(*func)(const T *, const T *, const int, const int), T const *arg1, T const *arg2, int len1, int len2) {
   /* This method is used to submit a 2 parameter array function to the thread pool. A status object is created on the Heap, and a
    * pointer to this object is returned to the caller.
    *
@@ -155,15 +156,32 @@ template <Numeric T> inline Status<T> ZetaSession::SubmitTask(T *(*func)(const T
    * - Cannot return a copy of this object. This will create object on the stack instead and create an issue for the queue, which takes in
    *   pointers only. i.e. Job object resource will be released before completion.
    * */
+
   JobTwoArray<T> *task = new JobTwoArray<T>{func, arg1, arg2, len1, len2};
   pool.QueueJob(*task);
   return Status<T>(task);
 }
 
-template <Numeric T> inline Status<T> ZetaSession::SubmitTask(T *(*func)(const T *, const int, const T), T *arg1, int len1, T cons){
-	JobOneArrayC<T> *task = new JobOneArrayC<T>(func, arg1, len1, cons);
-	pool.QueueJob(*task);
-	return Status<T>(task);
+template <Numeric T>
+inline Status<T> ZetaSession::SubmitTask(T *(*func)(const T *, T **, const int, const int), T *arg1, T **arg2, int len1, int len2) {
+  /* OVERLOAD
+   * This method is used to submit a 2 parameter array function to the thread pool. A status object is created on the Heap, and a
+   * pointer to this object is returned to the caller.
+   *
+   * Notes:
+   * - Cannot return a copy of this object. This will create object on the stack instead and create an issue for the queue, which takes in
+   *   pointers only. i.e. Job object resource will be released before completion.
+   * - arg2 is a pointer to a pointer to an array.
+   * */
+  JobTwoArray<T> *task = new JobTwoArray<T>{func, arg1, arg2, len1, len2};
+  pool.QueueJob(*task);
+  return Status<T>(task);
+}
+
+template <Numeric T> inline Status<T> ZetaSession::SubmitTask(T *(*func)(const T *, const int, const T), T const *arg1, int len1, T cons) {
+  JobOneArrayC<T> *task = new JobOneArrayC<T>(func, arg1, len1, cons);
+  pool.QueueJob(*task);
+  return Status<T>(task);
 }
 
 template <Numeric T> inline T Status<T>::GetResults() {

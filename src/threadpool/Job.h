@@ -121,7 +121,8 @@ private:
 template <int_or_float T> class JobTwoArray : public BaseJob {
 public:
   JobTwoArray();
-  JobTwoArray(T *(*func_ptr)(const T *, const T *, const int, const int), T *arg1, T *arg2, int len_args1, int len_args2);
+  JobTwoArray(T *(*func_ptr)(const T *, const T *, const int, const int), T const *arg1, T const *arg2, int len_args1, int len_args2);
+  JobTwoArray(T *(*func_ptr)(const T *, T **, const int, const int), T const *arg1, T **arg2, int len_args1, int len_args2);
   JobTwoArray(JobTwoArray<T> &other) = delete;
   JobTwoArray &operator=(JobTwoArray<T> &other) = delete;
   JobTwoArray(JobTwoArray<T> &&other);
@@ -130,15 +131,17 @@ public:
   void Run() override;
   std::future<T *> GetFuture();
   void GetFuture(std::future<T *> &out) override;
-  T *GetArg1();
-  T *GetArg2();
+  T const *GetArg1();
+  T const *GetArg2();
   int GetLen1();
   int GetLen2();
 
 private:
   std::packaged_task<T *(const T *, const T *, const int, const int)> *_func_ptr_2_args_arr = NULL;
-  T *_args;
-  T *_args2;
+  std::packaged_task<T *(const T *, T **, const int, const int)> *_func_ptr_2 = NULL;
+  T const *_args;
+  T const *_args2;
+  T **_arg2_p;
   int _len1;
   int _len2;
 };
@@ -146,7 +149,7 @@ private:
 template <int_or_float T> class JobOneArray : public BaseJob {
 public:
   JobOneArray();
-  JobOneArray(T *(*func_ptr)(const T *, const int), T *arg1, int len_args1);
+  JobOneArray(T *(*func_ptr)(const T *, const int), T const *arg1, int len_args1);
   JobOneArray(JobOneArray<T> &other) = delete;
   JobOneArray &operator=(JobOneArray<T> &other) = delete;
   JobOneArray(JobOneArray<T> &&other);
@@ -155,35 +158,35 @@ public:
   void Run() override;
   void GetFuture(std::future<T *> &out) override;
   std::future<T *> GetFuture();
-  T *GetArg1();
+  T const *GetArg1();
   int GetLen1();
 
 private:
   std::packaged_task<T *(const T *, const int)> *_func_ptr = NULL;
-  T *_args;
+  T const *_args;
   int _len1;
 };
 
 template <int_or_float T> class JobOneArrayC : public BaseJob {
 public:
-	JobOneArrayC();
-	JobOneArrayC(T *(*func_ptr)(const T *, const int, const T), T *arg1, int len_args1, T c);
-	JobOneArrayC(JobOneArrayC<T> &other) = delete;
-	JobOneArrayC &operator=(JobOneArrayC<T> &other) = delete;
-	JobOneArrayC(JobOneArrayC<T> &&other);
-	JobOneArrayC &operator=(JobOneArrayC<T> &&other);
-	~JobOneArrayC() override;
-	void Run() override;
-	void GetFuture(std::future<T *> &out) override;
-	T *GetArg1();
-	int GetLen1();
-	T GetScalar();
+  JobOneArrayC();
+  JobOneArrayC(T *(*func_ptr)(const T *, const int, const T), T const *arg1, int len_args1, T c);
+  JobOneArrayC(JobOneArrayC<T> &other) = delete;
+  JobOneArrayC &operator=(JobOneArrayC<T> &other) = delete;
+  JobOneArrayC(JobOneArrayC<T> &&other);
+  JobOneArrayC &operator=(JobOneArrayC<T> &&other);
+  ~JobOneArrayC() override;
+  void Run() override;
+  void GetFuture(std::future<T *> &out) override;
+  T *GetArg1();
+  int GetLen1();
+  T GetScalar();
 
 private:
-	std::packaged_task<T *(const T *, const int, const T)> *_func_ptr = NULL;
-	T *_args;
-	int _len1;
-	T _cons;
+  std::packaged_task<T *(const T *, const int, const T)> *_func_ptr = NULL;
+  T const *_args;
+  int _len1;
+  T _cons;
 };
 
 template <int_or_float T> class JobArr : public BaseJob {

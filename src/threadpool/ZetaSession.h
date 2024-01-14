@@ -64,9 +64,10 @@ public:
   template <Numeric T> Status<T> SubmitTask(T (*func)());
   template <Numeric T> Status<T> SubmitTask(T (*func)(const T), T arg1);
   template <Numeric T> Status<T> SubmitTask(T (*func)(const T, const T), T arg1, T arg2);
-	template <Numeric T> Status<T> SubmitTask(T *(*func)(const T *, const int, const T), T *arg1, int len1, T cons);
-  template <Numeric T> Status<T> SubmitTask(T *(*func)(const T *, const int), T *arg1, int len1);
-  template <Numeric T> Status<T> SubmitTask(T *(*func)(const T *, const T *, const int, const int), T *arg1, T *arg2, int len1, int len2);
+  template <Numeric T> Status<T> SubmitTask(T *(*func)(const T *, const int, const T), T const *arg1, int len1, T cons);
+  template <Numeric T> Status<T> SubmitTask(T *(*func)(const T *, const int), T const *arg1, int len1);
+  template <Numeric T> Status<T> SubmitTask(T *(*func)(const T *, const T *, const int, const int), T const *arg1, T const *arg2, int len1, int len2);
+  template <Numeric T> Status<T> SubmitTask(T *(*func)(const T *, T **, const int, const int), T *arg1, T **arg2, int len1, int len2);
   int Size();
   void StartPool();
   void ShutdownPool();
