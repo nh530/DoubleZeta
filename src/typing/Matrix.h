@@ -1,6 +1,6 @@
 #ifndef MATRIX_H
 #define MATRIX_H
-#include "algba_cmd/Algebra.h"
+#include "threadpool/Algebra.h"
 #include "threadpool/ZetaSession.h"
 #include "typing/DTypes.h"
 #include "typing/exceptions.h"

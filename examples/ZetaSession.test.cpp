@@ -1,5 +1,5 @@
 #include "threadpool/ZetaSession.h"
-#include "algba_cmd/Algebra.h"
+#include "threadpool/Algebra.h"
 #include <any>
 #include <iostream>
 #include <unistd.h>

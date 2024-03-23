@@ -1,4 +1,4 @@
-#include "algba_cmd/Algebra.h"
+#include "threadpool/Algebra.h"
 #include "threadpool/ZetaSession.h"
 #include "typing/Matrix.h"
 #include <chrono>
