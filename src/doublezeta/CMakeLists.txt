@@ -1,10 +1,7 @@
 # This defines the library build steps for the DoubleZeta source code, which is under the src directory.
-project(src)
-
 set(THREADPOOL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/threadpool")
 set(TYPING_DIR "${CMAKE_CURRENT_SOURCE_DIR}/typing")
 set(REGRESSION_DIR "${CMAKE_CURRENT_SOURCE_DIR}/regression")
-set(ALGEBRA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/algba_cmd")
 set(OPTIMIZER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/optimizer")
 set(CONFIG_DIR "${CMAKE_CURRENT_SOURCE_DIR}/config")
 set(DOUBLE_WORD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/double_word")
@@ -13,6 +10,7 @@ set(
 	THREADPOOL_FILES 
 	${THREADPOOL_DIR}/Job.tpp
 	${THREADPOOL_DIR}/ZetaSession.tpp
+	${THREADPOOL_DIR}/Algebra.tpp
 )
 set(
 	TYPING_FILES 
@@ -24,10 +22,6 @@ set(
 	REGRESSION_FILES 
 	${REGRESSION_DIR}/Linear.cpp
 	${REGRESSION_DIR}/Regression.cpp
-)
-set(
-	ALGEBRA_FILES 
-	${ALGEBRA_DIR}/Algebra.tpp
 )
 set(
 	OPTIMIZER_FILES
@@ -45,7 +39,10 @@ set(
 	${DOUBLE_WORD_DIR}/dw_consts.cpp
 	${DOUBLE_WORD_DIR}/fpu_fix.cpp
 )
-
+set(
+	CPYTHON_WRAPPERS
+	${CMAKE_CURRENT_SOURCE_DIR}/matrix_cpy.cpp
+)
 
 
 add_library(
@@ -54,12 +51,19 @@ add_library(
 	${THREADPOOL_FILES}
 	${TYPING_FILES}
 	${REGRESSION_FILES}
-	${ALGEBRA_FILES}
 	${OPTIMIZER_FILES}
 	${CONFIG_FILES}
 	${DOUBLE_WORD_FILES}
 	) # cmake needs the library type to be specified as SHARED in order to build .tpp files.
+#python_extension_module(src) # from PythonExtensions
+set(CMAKE_SHARED_LIBRARY_SUFFIX ".so")
+set(CMAKE_SHARED_LIBRARY_PREFIX "")
+set_target_properties(src PROPERTIES OUTPUT_NAME "core")
 set_target_properties(src PROPERTIES LINKER_LANGUAGE CXX) # cmake cannot determine the language, so explicitly state cpp.
 target_include_directories(src INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}) # CMAKE_CURRENT_SOURCE_DIR is the directory of the CMakeListFile.txt.
 target_include_directories(src PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}) # This is needed for internal linkage.
-target_link_libraries(src GTest::gtest_main)
+if (SKBUILD)
+	add_library(wrappers MODULE ${CPYTHON_WRAPPERS}) 
+	python_extension_module(wrappers) # from PythonExtensions
+	set_target_properties(wrappers PROPERTIES OUTPUT_NAME "zetacore")
+endif()

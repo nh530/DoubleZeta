@@ -3,7 +3,6 @@
 #include "typing/DTypes.h"
 #include "typing/Matrix.h"
 #include <functional>
-#include <gtest/gtest.h>
 #include <variant>
 #include <vector>
 
@@ -39,7 +38,6 @@ public:
   // A 1 by 1 matrix of 0 is used as the sentinel value to signal the algorithm to generate its own initial weight.
 private:
   Matrix<float> _set_initial(int rows, int cols, int seed = 100);
-  FRIEND_TEST(GradientDescentTest, set_initial); // For google unit-test framework.
 };
 
 // TODO: Declare stochastic gradient descent, Momentum gradient descent, and any other gradient deescent variations
