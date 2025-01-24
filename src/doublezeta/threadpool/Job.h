@@ -2,6 +2,8 @@
 TODO: Templates classes and functions might not be callable from python because compiler needs to see the template arguments that are used in order to
 create the corresponding overloaded func/method/class.
 Reference: https://isocpp.org/wiki/faq/templates#templates-defn-vs-decl
+
+This OOP approach is more lengthy, combersome, and tedious than using c style callback function with callback arguments.
 */
 #include "typing/DTypes.h"
 #include <functional>

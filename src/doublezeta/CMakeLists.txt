@@ -1,6 +1,4 @@
 # This defines the library build steps for the DoubleZeta source code, which is under the src directory.
-project(src)
-
 set(THREADPOOL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/threadpool")
 set(TYPING_DIR "${CMAKE_CURRENT_SOURCE_DIR}/typing")
 set(REGRESSION_DIR "${CMAKE_CURRENT_SOURCE_DIR}/regression")
@@ -41,7 +39,10 @@ set(
 	${DOUBLE_WORD_DIR}/dw_consts.cpp
 	${DOUBLE_WORD_DIR}/fpu_fix.cpp
 )
-
+set(
+	CPYTHON_WRAPPERS
+	${CMAKE_CURRENT_SOURCE_DIR}/matrix_cpy.cpp
+)
 
 
 add_library(
@@ -54,7 +55,15 @@ add_library(
 	${CONFIG_FILES}
 	${DOUBLE_WORD_FILES}
 	) # cmake needs the library type to be specified as SHARED in order to build .tpp files.
+#python_extension_module(src) # from PythonExtensions
+set(CMAKE_SHARED_LIBRARY_SUFFIX ".so")
+set(CMAKE_SHARED_LIBRARY_PREFIX "")
+set_target_properties(src PROPERTIES OUTPUT_NAME "core")
 set_target_properties(src PROPERTIES LINKER_LANGUAGE CXX) # cmake cannot determine the language, so explicitly state cpp.
 target_include_directories(src INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}) # CMAKE_CURRENT_SOURCE_DIR is the directory of the CMakeListFile.txt.
 target_include_directories(src PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}) # This is needed for internal linkage.
-target_link_libraries(src GTest::gtest_main)
+if (SKBUILD)
+	add_library(wrappers MODULE ${CPYTHON_WRAPPERS}) 
+	python_extension_module(wrappers) # from PythonExtensions
+	set_target_properties(wrappers PROPERTIES OUTPUT_NAME "zetacore")
+endif()

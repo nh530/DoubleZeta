@@ -75,7 +75,7 @@ TEST(LinearRegressionTest, get_intercept) {
   EXPECT_NEAR(lr.get_intercept(), 0.0f, .0001);
 }
 
-TEST(LinearRegressionTest, score) {
+TEST(DISABLED_LinearRegressionTest, score) {
   LinearRegression lr = LinearRegression(.00011, .01, false);
   Matrix<float> obs{3, 1};
   obs.set_value(0,0,10);

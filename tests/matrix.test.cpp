@@ -89,7 +89,6 @@ TEST(MatrixTest, operator_add) {
   Matrix<float> left1 = Matrix<float>(4, 4, 0);
   Matrix<float> right1 = Matrix<float>(4, 4, 0);
   EXPECT_EQ((left1 + right1)[0][2], (Matrix<float>(4, 4, 0))[0][2]);
-
   left1.set_value(0, 0, 10);
   left1.set_value(1, 1, 20);
   left1.set_value(1, 3, 0.123123f);
@@ -146,7 +145,8 @@ TEST(MatrixTest, operator_add_3) {
   EXPECT_THROW(left1 + right1, std::invalid_argument);
   EXPECT_THROW(left1 + Matrix<float>(4, 2, 0), std::invalid_argument);
   EXPECT_THROW(Matrix<float>(2, 2, 0) + Matrix<float>(4, 2, 0), std::invalid_argument);
-  EXPECT_THROW(Matrix<float>(0, 0) + Matrix<float>(4, 2, 0), std::invalid_argument); // NOTE: Matrix(0, 0) has undefined behavior because array values not defined.
+  EXPECT_THROW(Matrix<float>(0, 0) + Matrix<float>(4, 2, 0),
+               std::invalid_argument); // NOTE: Matrix(0, 0) has undefined behavior because array values not defined.
   EXPECT_FLOAT_EQ((Matrix<float>(1, 1) + Matrix<float>(1, 1))[0][0], (Matrix<float>(1, 1))[0][0]);
   EXPECT_THROW(left1 += right1, std::invalid_argument);
 }
@@ -202,7 +202,7 @@ TEST(MatrixTest, operator_multi) {
   left1.set_value(0, 0, 10);
   left1.set_value(1, 1, 20);
   left1.set_value(1, 3, 0.123123f);
-  Matrix<float> actual = Matrix<float>(4, 4);
+  Matrix<float> actual = Matrix<float>(4, 4, 0);
   actual.set_value(0, 0, 4.3f);
   actual.set_value(0, 3, 49.1f);
   actual.set_value(1, 3, 152.835325f);
@@ -401,4 +401,61 @@ TEST(MatrixTest, copy_assignment) {
   EXPECT_EQ(test2[1][0], 2.5);
   EXPECT_EQ(test2[2][0], 4.125);
   EXPECT_EQ(test2[3][0], 1.0);
+}
+
+TEST(VectorTest, instantiation) {
+  Vector<float> mat1 = Vector<float>(5, 0);
+  EXPECT_EQ(mat1.shape[0], 1);
+  EXPECT_EQ(mat1.shape[1], 5);
+  EXPECT_EQ(mat1.get_value(0), 0.0);
+  EXPECT_EQ(mat1.get_value(1), 0.0);
+  EXPECT_EQ(mat1.get_value(2), 0.0);
+  EXPECT_EQ(mat1.get_value(3), 0.0);
+  EXPECT_EQ(mat1.get_value(4), 0.0);
+  Vector<float> mat3{3, 10.0};
+  EXPECT_EQ(mat3.shape[0], 1);
+  EXPECT_EQ(mat3.shape[1], 3);
+  EXPECT_EQ(mat3.get_value(0), 10.0);
+  EXPECT_EQ(mat3.get_value(1), 10.0);
+  EXPECT_EQ(mat3.get_value(2), 10.0);
+
+  Vector<float> mat6{}; // Testing that this runs. Expected outcome is that it does nothing.
+}
+
+TEST(VectorTest, operator_indexing) {
+  Vector<float> test1 = Vector<float>(3, 0);
+  test1.set_value(0, 10);
+  test1.set_value(1, 20);
+
+  EXPECT_EQ(test1[0], 10.0f);
+  EXPECT_EQ(test1[1], 20.0f);
+  EXPECT_EQ(test1[2], 0.0f);
+
+  // Note that if the first index is within bounds but the second index is out of bounds, then undefined behavior occurs.
+  // i.e. test1[2][10] will have undefined behavior. There is no way to force array indexing limit.
+  EXPECT_THROW(test1[4], std::invalid_argument);
+  EXPECT_THROW(test1[10], std::invalid_argument);
+  EXPECT_THROW(test1[-1], std::invalid_argument);
+}
+
+TEST(VectorTest, operator_add) {
+  Vector<float> left1 = Vector<float>(4, 0);
+  Vector<float> right1 = Vector<float>(4, 0);
+  EXPECT_EQ((left1 + right1)[2], Vector<float>(4, 0)[2]);
+
+  left1.set_value(0, 10);
+  left1.set_value(1, 20);
+  left1.set_value(1, 0.123123f);
+  Vector<float> actual = Vector<float>(4, 0);
+  actual.set_value(0, 10);
+  actual.set_value(1, 20);
+  actual.set_value(1, 0.123123f);
+  for (int i = 0; i < actual.shape[0]; i++) {
+    EXPECT_FLOAT_EQ((left1 + right1)[i], actual[i]);
+  }
+
+  // right1 += left1;
+  // for (int i = 0; i < actual.shape[0]; i++) {
+  //   EXPECT_FLOAT_EQ(right1[i], actual[i]);
+  // }
 }
