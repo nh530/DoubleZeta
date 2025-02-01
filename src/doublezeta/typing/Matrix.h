@@ -117,13 +117,14 @@ public:
   T const *const &operator[](int);
   // TODO: const float *operator[](int) const; member function is not tested I think.
   T const *const &operator[](int) const;
+	// TODO: Need private set_value and public set_value that has guard rails
   void set_value(int r, int c, T val);
   void set_value(int r, T *row);
   T &get_value(int r, int c);
   T &get_value(int r, int c) const;
   T const *const &get_value(int);
   T const *const &get_value(Matrix<bool>); // TODO: Not implemented
-  int operator()(int, int);
+  int operator()(int, int);                // TODO: Not implemented
   Matrix<T> &operator=(const Matrix<T> &);
   Matrix<T> &operator=(Matrix<T> &&);
   Matrix<T> &operator+=(const Matrix<T> &);
@@ -131,6 +132,7 @@ public:
   Matrix<T> transpose();
   Matrix<T> transpose() const;
   const std::vector<float> getColumn(int j) const;
+  // Matrix<T> getColumnM(int j); // TODO: not implemented
   int ndim() override;
   void print() override;
   unsigned int nbytes() override;

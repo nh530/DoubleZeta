@@ -599,7 +599,6 @@ template <DataType T> Matrix<T>::Matrix(int rows, int cols) : _rows{rows}, _cols
     _container.push_back(std::move(temp));
   }
 }
-
 template <DataType T> Matrix<T>::Matrix(int rows, int cols, T def_val) : _rows{rows}, _cols{cols} {
   // Defaults value implicit from header file.
   if (rows == 0)
@@ -743,20 +742,36 @@ template <DataType T> Matrix<T> operator+(const Matrix<T> &a, const Matrix<T> &b
     return Matrix<T>{0, 0}; // empty matrix
   }
   Matrix<T> out{a.shape[0], a.shape[1]};
-  std::vector<Status<float> *> items;
+  std::vector<Status<T> *> items;
   for (int i = 0; i < a.shape[0]; i++) {
-    Status<float> *temp = new Status<float>(out._worker.SubmitTask(&arr_op_sum, a[i], b[i], a.shape[1], b.shape[1]));
+    Status<T> *temp = new Status<T>(out._worker.SubmitTask(&arr_op_sum, a[i], b[i], a.shape[1], b.shape[1]));
     items.push_back(temp);
   }
   int i = 0;
   for (auto const &ele : items) {
-    std::future<float *> temp = ele->GetFuturePtr();
+    std::future<T *> temp = ele->GetFuturePtr();
     temp.wait();
     out.set_value(i, temp.get());
     i++;
     delete ele;
   }
   items.clear();
+  return std::move(out);
+}
+inline Matrix<bool> operator+(const Matrix<bool> &a, const Matrix<bool> &b) {
+  // Element-wise add two matrices.
+  if (a.shape[0] != b.shape[0] || a.shape[1] != b.shape[1]) {
+    throw std::invalid_argument("Shape mismatch between left and right Matrices");
+  }
+  if (a.shape[0] == 0 && a.shape[1] == 0) {
+    return Matrix<bool>{0, 0}; // empty matrix
+  }
+  Matrix<bool> out{a.shape[0], a.shape[1]};
+  for (int i = 0; i < a.shape[0]; i++) {
+    for (int j = 0; j < a.shape[1]; j++) {
+      out.set_value(i, j, a.get_value(i, j) || b.get_value(i, j));
+    }
+  }
   return std::move(out);
 }
 template <DataType T> Matrix<T> operator-(const Matrix<T> &a, const Matrix<T> &b) {
@@ -768,14 +783,14 @@ template <DataType T> Matrix<T> operator-(const Matrix<T> &a, const Matrix<T> &b
     return Matrix<T>{0, 0}; // empty matrix
   }
   Matrix<T> out{a.shape[0], a.shape[1]};
-  std::list<Status<float> *> items;
+  std::list<Status<T> *> items;
   for (int i = 0; i < a.shape[0]; i++) {
-    Status<float> *temp = new Status<float>(out._worker.SubmitTask(&arr_op_sub, a[i], b[i], a.shape[1], b.shape[1]));
+    Status<T> *temp = new Status<T>(out._worker.SubmitTask(&arr_op_sub, a[i], b[i], a.shape[1], b.shape[1]));
     items.push_back(temp);
   }
   int i = 0;
   for (auto const &ele : items) {
-    std::future<float *> temp = ele->GetFuturePtr();
+    std::future<T *> temp = ele->GetFuturePtr();
     temp.wait();
     out.set_value(i, temp.get());
     i++;
@@ -784,7 +799,22 @@ template <DataType T> Matrix<T> operator-(const Matrix<T> &a, const Matrix<T> &b
   items.clear();
   return std::move(out);
 }
-
+inline Matrix<bool> operator-(const Matrix<bool> &a, const Matrix<bool> &b) {
+  // Element-wise add two matrices.
+  if (a.shape[0] != b.shape[0] || a.shape[1] != b.shape[1]) {
+    throw std::invalid_argument("Shape mismatch between left and right Matrices");
+  }
+  if (a.shape[0] == 0 && a.shape[1] == 0) {
+    return Matrix<bool>{0, 0}; // empty matrix
+  }
+  Matrix<bool> out{a.shape[0], a.shape[1]};
+  for (int i = 0; i < a.shape[0]; i++) {
+    for (int j = 0; j < a.shape[1]; j++) {
+      out.set_value(i, j, a.get_value(i, j) && !b.get_value(i, j));
+    }
+  }
+  return std::move(out);
+}
 template <DataType T> Matrix<T> operator*(const Matrix<T> &a, const Matrix<T> &b) {
   /* Dot product. This is not element-wise multiplication.
    * It is possible to return a 1x1 Matrix. Dot product of 2 vectors
@@ -804,16 +834,16 @@ template <DataType T> Matrix<T> operator*(const Matrix<T> &a, const Matrix<T> &b
   int r_rows = b.shape[0];
   int r_cols = b.shape[1];
   const Matrix<T> int_mat = b.transpose();
-  std::list<Status<float> *> items;
+  std::list<Status<T> *> items;
   for (int i = 0; i < l_rows; i++) {
     for (int j = 0; j < r_cols; j++) {
-      Status<float> *temp = new Status<float>(a._worker.SubmitTask(&arr_op_dot_prod, a[i], int_mat[j], l_cols, r_rows));
+      Status<T> *temp = new Status<T>(a._worker.SubmitTask(&arr_op_dot_prod, a[i], int_mat[j], l_cols, r_rows));
       items.push_back(temp);
     }
   }
   for (int i = 0; i < l_rows; i++) {
     for (int j = 0; j < r_cols; j++) {
-      std::future<float *> temp = items.front()->GetFuturePtr(); // pop_front is constant time.
+      std::future<T *> temp = items.front()->GetFuturePtr(); // pop_front is constant time.
       temp.wait();
       out.set_value(i, j, (*temp.get()));
       delete items.front();
@@ -823,7 +853,7 @@ template <DataType T> Matrix<T> operator*(const Matrix<T> &a, const Matrix<T> &b
   items.clear();
   return std::move(out);
 }
-
+inline Matrix<bool> operator*(const Matrix<bool> &a, const Matrix<bool> &b) { throw NotImplemented("Invalid operation"); }
 template <DataType T> Matrix<T> operator*(const float &a, const Matrix<T> &b) {
   // Multiply the matrice by a scalar a.
   if (b.shape[0] == 0 && b.shape[1] == 0) {
@@ -833,24 +863,23 @@ template <DataType T> Matrix<T> operator*(const float &a, const Matrix<T> &b) {
   Matrix<T> out{b.shape[0], b.shape[1]};
   int r_rows = b.shape[0];
   int r_cols = b.shape[1];
-  std::vector<Status<float> *> items;
+  std::vector<Status<T> *> items;
   for (int i = 0; i < r_rows; i++) {
-    Status<float> *temp = new Status<float>(b._worker.SubmitTask(&arr_op_mul_c, b[i], b.shape[1], a));
+    Status<T> *temp = new Status<T>(b._worker.SubmitTask(&arr_op_mul_c, b[i], b.shape[1], a));
     items.push_back(temp);
   }
   int i = 0;
   for (auto const &ele : items) {
-    std::cerr << b[0][0] << "HI" << '\n';
-    std::future<float *> temp = ele->GetFuturePtr();
+    std::future<T *> temp = ele->GetFuturePtr();
     temp.wait();
     out.set_value(i, temp.get());
     i++;
     delete ele;
   }
   items.clear();
-  std::cerr << b[0][0] << "HI" << '\n';
   return std::move(out);
 }
+inline Matrix<bool> operator*(const float &a, const Matrix<bool> &b) { throw NotImplemented("Invalid operation"); }
 template <DataType T> Matrix<T> operator*(const int &a, const Matrix<T> &b) {
   // Multiply the matrice by a scalar a.
   if (b.shape[0] == 0 && b.shape[1] == 0) {
@@ -859,8 +888,11 @@ template <DataType T> Matrix<T> operator*(const int &a, const Matrix<T> &b) {
   float temp = a;
   return std::move(temp * b);
 }
+inline Matrix<bool> operator*(const int &a, const Matrix<bool> &b) { throw NotImplemented("Invalid operation"); }
 template <DataType T> Matrix<T> operator*(const Matrix<T> &b, const int &a) { return std::move(a * b); }
+inline Matrix<bool> operator*(const Matrix<bool> &b, const int &a) { throw NotImplemented("Invalid operation"); }
 template <DataType T> Matrix<T> operator*(const Matrix<T> &b, const float &a) { return std::move(a * b); }
+inline Matrix<bool> operator*(const Matrix<bool> &b, const float &a) { throw NotImplemented("Invalid operation"); }
 template <DataType T> bool operator==(const Matrix<T> &a, const Matrix<T> &b) {
   if (a.shape[0] != b.shape[0] || a.shape[1] != b.shape[1]) {
     throw std::invalid_argument("Shape mismatch between left and right Matrices");
@@ -898,20 +930,24 @@ template <DataType T> Matrix<T> &Matrix<T>::operator+=(const Matrix<T> &other) {
   if ((*this).shape[0] == 0 && (*this).shape[1] == 0) {
     return *this;
   }
-  std::vector<Status<float> *> items;
+  std::vector<Status<T> *> items;
   for (int i = 0; i < (*this).shape[0]; i++) {
-    Status<float> *temp = new Status<float>((*this)._worker.SubmitTask(&arr_op_sum, (*this)[i], other[i], (*this).shape[1], other.shape[1]));
+    Status<T> *temp = new Status<T>((*this)._worker.SubmitTask(&arr_op_sum, (*this)[i], other[i], (*this).shape[1], other.shape[1]));
     items.push_back(temp);
   }
   int i = 0;
   for (auto const &ele : items) {
-    std::future<float *> temp = ele->GetFuturePtr();
+    std::future<T *> temp = ele->GetFuturePtr();
     temp.wait();
     (*this).set_value(i, temp.get());
     i++;
     delete ele;
   }
   items.clear();
+  return *this;
+}
+template <> inline Matrix<bool> &Matrix<bool>::operator+=(const Matrix<bool> &other) {
+  *this = *this + other; // TODO: Make sure this works
   return *this;
 }
 template <DataType T> Matrix<T> &Matrix<T>::operator-=(const Matrix<T> &other) {
@@ -921,20 +957,24 @@ template <DataType T> Matrix<T> &Matrix<T>::operator-=(const Matrix<T> &other) {
   if ((*this).shape[0] == 0 && (*this).shape[1] == 0) {
     return *this;
   }
-  std::list<Status<float> *> items;
+  std::list<Status<T> *> items;
   for (int i = 0; i < (*this).shape[0]; i++) {
-    Status<float> *temp = new Status<float>((*this)._worker.SubmitTask(&arr_op_sub, (*this)[i], other[i], (*this).shape[1], other.shape[1]));
+    Status<T> *temp = new Status<T>((*this)._worker.SubmitTask(&arr_op_sub, (*this)[i], other[i], (*this).shape[1], other.shape[1]));
     items.push_back(temp);
   }
   int i = 0;
   for (auto const &ele : items) {
-    std::future<float *> temp = ele->GetFuturePtr();
+    std::future<T *> temp = ele->GetFuturePtr();
     temp.wait();
     (*this).set_value(i, temp.get());
     i++;
     delete ele;
   }
   items.clear();
+  return *this;
+}
+template <> inline Matrix<bool> &Matrix<bool>::operator-=(const Matrix<bool> &other) {
+  *this = *this - other;
   return *this;
 }
 template <DataType T> Matrix<T> Matrix<T>::transpose() const {
@@ -995,6 +1035,7 @@ template <DataType T> void Matrix<T>::flatten() {
   for (int i = 0; i < _rows; i++) {
     for (int j = 0; j < _cols; j++) {
       _container[0][idx] = temp[i][j];
+			idx += 1;
     }
   }
 
