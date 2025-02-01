@@ -1,5 +1,7 @@
 # DoubleZeta
-Multi-threading math
+Multi-threading math. 
+For prototyping purposes only. Not a substitute for BLAS. 
+Matrix addition speed is comparable to numpy
 
 
 # Build Instructions
